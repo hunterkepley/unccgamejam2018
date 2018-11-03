@@ -19,6 +19,7 @@ use std::time::Instant;
 mod player;
 mod animation;
 mod energy_bar;
+mod camera;
 
 struct MainState {
     text: graphics::Text,
@@ -31,7 +32,8 @@ struct MainState {
     accumulator: f64,
     is_a_pressed: bool,
     is_d_pressed: bool,
-    camera_position: (f32, f32),
+    gc: camera::Camera,
+    bg_position: (f32, f32),
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -62,9 +64,14 @@ impl MainState {
         let accumulator = 0.0;
         let is_a_pressed = false;
         let is_d_pressed = false;
-        let camera_position = (pl.position.0 / 2.0 - pl.size.0 / 2.0, pl.position.1 / 2.0 - pl.size.1 / 2.0);
-        let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_duration, current_time, 
-            accumulator, is_a_pressed, is_d_pressed };
+
+        let gc = camera::Camera::new((0.0, 0.0), WINDOW_SIZE);
+
+        let bg_position = (0.0, -0.5);
+
+        let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
+            accumulator, is_a_pressed, is_d_pressed, gc, bg_position };
+
         Ok(s)
     }
 }
@@ -107,9 +114,15 @@ impl event::EventHandler for MainState {
         while self.accumulator >= DT {
             // Update fixed-interval updates
             self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
+            self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
+            self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
+            self.gc.update();
+
+            println!("{:?} {:?}", self.gc.center.0, self.pl.position.0);
 
             self.accumulator -= DT;
         }
+
         Ok(())
     }
 
@@ -141,7 +154,7 @@ impl event::EventHandler for MainState {
         };
 
         // Background objects / Background itself
-        let bg_dst = graphics::Point2::new(0.0, -5.0);
+        let bg_dst = graphics::Point2::new(self.bg_position.0-self.gc.center.0, self.bg_position.1-self.gc.center.1);
         graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
 
         // Player drawing
