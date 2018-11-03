@@ -56,7 +56,9 @@ impl MainState {
             energy_bar_size, energy_bar_size.0); // (position: (f32, f32), size: (f32, f32), maxWidth: f32)
 
         // Player
-        let pl = player::Player::new(ctx, "/player/player_stand_r.png", (0.0, 0.0), 200.0, WINDOW_SIZE, energy_bar.size.1);
+        let _image_location = "/player/player_stand_r.png";
+        let _pl_image = graphics::Image::new(ctx, _image_location).unwrap();
+        let pl = player::Player::new(ctx, _image_location, (WINDOW_SIZE.0/2.0 - _pl_image.width() as f32/2.0, 0.0), 200.0, WINDOW_SIZE, energy_bar.size.1);
 
         // Random variables for phsyics and such 
         let current_duration = Instant::now();
@@ -67,7 +69,7 @@ impl MainState {
 
         let gc = camera::Camera::new((0.0, 0.0), WINDOW_SIZE);
 
-        let bg_position = (0.0, -0.5);
+        let bg_position = (0.0, 0.0);
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, gc, bg_position };
@@ -76,15 +78,15 @@ impl MainState {
     }
 }
 
-fn handle_input(pl: &mut player::Player, ctx: &mut Context,
+fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, ctx: &mut Context,
                 is_a_pressed: bool, is_d_pressed: bool) {
 
     if is_a_pressed {
-        pl.position.0 -= pl.move_speed * get_dt(ctx);
+        gc.center.0 -= pl.move_speed * get_dt(ctx);
     }
 
     if is_d_pressed {
-        pl.position.0 += pl.move_speed * get_dt(ctx);
+        gc.center.0 += pl.move_speed * get_dt(ctx);
     }
 }
 
@@ -106,7 +108,7 @@ impl event::EventHandler for MainState {
         self.energy_bar.update(self.pl.energy);
 
         // Update player based on user input
-        handle_input(&mut self.pl, ctx, self.is_a_pressed, self.is_d_pressed);
+        handle_input(&mut self.pl, &mut self.gc, ctx, self.is_a_pressed, self.is_d_pressed);
 
         self.pl.update(ctx, WINDOW_SIZE);
         
@@ -114,8 +116,8 @@ impl event::EventHandler for MainState {
         while self.accumulator >= DT {
             // Update fixed-interval updates
             self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
-            self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
-            self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
+            // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
+            // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
             self.gc.update();
 
             println!("{:?} {:?}", self.gc.center.0, self.pl.position.0);
@@ -154,7 +156,7 @@ impl event::EventHandler for MainState {
         };
 
         // Background objects / Background itself
-        let bg_dst = graphics::Point2::new(self.bg_position.0-self.gc.center.0, self.bg_position.1-self.gc.center.1);
+        let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
         graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
 
         // Player drawing

@@ -55,11 +55,11 @@ impl Player {
     pub fn update(&mut self, _ctx: &mut Context, window_size: (f32, f32)) {
         // bottom offset for the bar at the bottom where the GUI is being rendered.
 
-        if self.position.0 <= 0.0 {
+        /*if self.position.0 <= 0.0 {
             self.position.0 = 0.0;
         } else if self.position.0 + self.size.0 as f32 >= window_size.0 {
             self.position.0 = window_size.0 - self.size.0 as f32;
-        }
+        }*/
     }
 
     pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
