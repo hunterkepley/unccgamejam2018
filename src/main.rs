@@ -58,7 +58,7 @@ impl MainState {
         // Player
         let _image_location = "/player/player_stand_r.png";
         let _pl_image = graphics::Image::new(ctx, _image_location).unwrap();
-        let pl = player::Player::new(ctx, _image_location, (WINDOW_SIZE.0/2.0 - _pl_image.width() as f32/2.0, 0.0), 200.0, WINDOW_SIZE, energy_bar.size.1);
+        let pl = player::Player::new(ctx, _image_location, (WINDOW_SIZE.0/2.0 - _pl_image.width() as f32/2.0, 0.0), 300.0, WINDOW_SIZE, energy_bar.size.1);
 
         // Random variables for phsyics and such 
         let current_duration = Instant::now();
@@ -78,8 +78,8 @@ impl MainState {
     }
 }
 
-fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, ctx: &mut Context,
-                is_a_pressed: bool, is_d_pressed: bool) {
+fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (f32, f32), 
+            bg_image: graphics::Image, ctx: &mut Context, is_a_pressed: bool, is_d_pressed: bool) {
 
     if is_a_pressed {
         gc.center.0 -= pl.move_speed * get_dt(ctx);
@@ -87,6 +87,12 @@ fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, ctx: &mut Cont
 
     if is_d_pressed {
         gc.center.0 += pl.move_speed * get_dt(ctx);
+    }
+
+    if gc.center.0 <= bg_position.0 + pl.size.0 as f32/2.0 {
+        gc.center.0 = bg_position.0 + pl.size.0 as f32/2.0;
+    } else if gc.center.0 >= bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0 {
+        gc.center.0 = bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0;
     }
 }
 
@@ -108,7 +114,7 @@ impl event::EventHandler for MainState {
         self.energy_bar.update(self.pl.energy);
 
         // Update player based on user input
-        handle_input(&mut self.pl, &mut self.gc, ctx, self.is_a_pressed, self.is_d_pressed);
+        handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, self.is_a_pressed, self.is_d_pressed);
 
         self.pl.update(ctx, WINDOW_SIZE);
         
