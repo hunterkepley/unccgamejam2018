@@ -41,14 +41,14 @@ fn get_dt(ctx: &mut Context) -> f32{
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 12)?;
+        let font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 12)?;
         let text = graphics::Text::new(ctx, "INVIGORATION STATION", &font)?;
         
         // Stuff drawn in background / objects / background itself
-        let background_image = graphics::Image::new(ctx, "/background.png").unwrap();
+        let background_image = graphics::Image::new(ctx, "/misc/background.png").unwrap();
         
         // Player
-        let pl = player::Player::new(ctx, "/player_stand.png", (0.0, 0.0), 200.0);
+        let pl = player::Player::new(ctx, "/player/player_stand.png", (0.0, 0.0), 200.0);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);

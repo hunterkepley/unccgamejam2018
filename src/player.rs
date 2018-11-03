@@ -23,8 +23,8 @@ impl Player {
         let energy = 100.0;
         let is_standing = true;
         // Animation
-        let walk_animation = animation::Animation::new(2, 0.5, vec![graphics::Image::new(ctx, "/player_move_2.png").unwrap(),
-            graphics::Image::new(ctx, "/player_move_1.png").unwrap()]);
+        let walk_animation = animation::Animation::new(2, 0.3, vec![graphics::Image::new(ctx, "/player/player_move_2.png").unwrap(),
+            graphics::Image::new(ctx, "/player/player_move_1.png").unwrap()]);
         Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation, is_standing }
     }
 
@@ -56,7 +56,7 @@ impl Player {
         } else if is_a_pressed {
             self.is_standing = false;
         } else if !self.is_standing {
-            self.batch.set_image(graphics::Image::new(ctx, "/player_stand.png").unwrap());
+            self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand.png").unwrap());
             self.is_standing = true;
             self.walk_animation.current_interval = self.walk_animation.interval - 0.01;
         }
