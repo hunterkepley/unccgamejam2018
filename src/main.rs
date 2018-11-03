@@ -47,7 +47,7 @@ impl MainState {
         let background_image = graphics::Image::new(ctx, "/background.png").unwrap();
         
         // Player
-        let pl = player::Player::new(ctx, "/player.png", (0.0, 0.0), 200.0);
+        let pl = player::Player::new(ctx, "/player_stand.png", (0.0, 0.0), 200.0);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);
@@ -90,8 +90,6 @@ impl event::EventHandler for MainState {
         self.current_duration = duration;
 
         self.accumulator += new_time;
-
-        self.pl.energy -= 1.0 * get_dt(ctx);
 
         // Updates that are non-critical time based
         // Update GUI, make dirty update later?
