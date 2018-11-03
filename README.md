@@ -19,7 +19,7 @@ It *should* install everything using the handy-dandy `Cargo.toml` file
 
 ## Windows:
 
-Install rust from their [website](ttps://www.rust-lang.org)
+Install rust from their [website](https://www.rust-lang.org)
 
 Then open a CMD or whatever you want to use
 
