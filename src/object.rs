@@ -1,5 +1,7 @@
 use ggez::{Context, graphics};
 
+use super::minigame;
+
 pub struct Object {
     pub image: graphics::Image,
     pub event_image: graphics::Image,
@@ -7,37 +9,45 @@ pub struct Object {
     pub position: (f32, f32),
     pub size: (u32, u32),
     pub has_event: bool,
+    pub this_minigame: minigame::Minigame
 }
 
 impl Object {
-    pub fn new(ctx: &mut Context, image_location: &str, event_image_location: &str, position: (f32, f32)) -> Object {
+    pub fn new(ctx: &mut Context, image_location: &str, event_image_location: &str, position: (f32, f32),
+    this_minigame: minigame::Minigame) -> Object {
         let image = graphics::Image::new(ctx, image_location).unwrap();
         let event_image = graphics::Image::new(ctx, event_image_location).unwrap();
         let batch = graphics::spritebatch::SpriteBatch::new(image.clone());
         let size = (image.width(), image.height());
         let has_event = false;
-        Object { image, event_image, batch, position, size, has_event }
+        Object { image, event_image, batch, position, size, has_event, this_minigame }
     }
 
     pub fn start_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) {
         self.has_event = true;
+        self.size = (self.event_image.width(), self.event_image.height());
         self.batch.set_image(self.event_image.clone());
         // Move it to new image location
-        self.position = (background_image.width() as f32 - self.event_image.width() as f32, window_size.1 - self.event_image.height() as f32 - 30.0);
+        self.position = (background_image.width() as f32 - self.event_image.width() as f32, window_size.1 - self.event_image.height() as f32 - 45.0);
     }
 
     pub fn end_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) {
         self.has_event = false;
+        self.size = (self.image.width(), self.image.height());
         self.batch.set_image(self.image.clone());
         // Move it back
-        self.position = (background_image.width() as f32 - self.image.width() as f32/2.0, window_size.1 - self.image.height() as f32 - 30.0);
+        self.position = (background_image.width() as f32 - self.image.width() as f32/2.0, window_size.1 - self.image.height() as f32 - 45.0);
     }
 
-    pub fn update(&mut self, gc_center: (f32, f32), pl_size: (u32, u32)) {
+    pub fn update(&mut self, gc_center: (f32, f32), pl_size: (u32, u32), is_x_pressed: bool, in_event: &mut bool, 
+    current_minigame: &mut minigame::Minigame) {
         if self.has_event { // If the event is active, check if player is colliding
             if gc_center.0 + pl_size.0 as f32/2.0 as f32 >= self.position.0 &&
-                gc_center.0 - pl.size.0 as f32/2.0 <= self.position.0 + self.size.0 as f32/2.0 as f32 {
-                    println!("That collided");
+            gc_center.0 - pl_size.0 as f32/2.0 <= self.position.0 + self.size.0 as f32 {
+                if is_x_pressed {
+                    *in_event = true;
+                    *current_minigame = self.this_minigame.clone();
+                }
             }
         }
     }

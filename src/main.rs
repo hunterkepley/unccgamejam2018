@@ -21,6 +21,7 @@ mod animation;
 mod energy_bar;
 mod camera;
 mod object;
+mod minigame;
 
 struct MainState {
     text: graphics::Text,
@@ -33,12 +34,15 @@ struct MainState {
     accumulator: f64,
     is_a_pressed: bool,
     is_d_pressed: bool,
+    is_x_pressed: bool,
     gc: camera::Camera,
     bg_position: (f32, f32),
     porch_object: object::Object,
     objects: Vec<object::Object>,
     event_timer: f32,
     event_timer_base: f32,
+    in_event: bool,
+    current_minigame: minigame::Minigame,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -71,6 +75,7 @@ impl MainState {
         let accumulator = 0.0;
         let is_a_pressed = false;
         let is_d_pressed = false;
+        let is_x_pressed = false;
 
         let gc = camera::Camera::new((0.0, 0.0), WINDOW_SIZE);
 
@@ -80,38 +85,47 @@ impl MainState {
         let _door_closed_image_location = "/misc/door_closed.png";
         let _door_closed_image = graphics::Image::new(ctx, _door_closed_image_location).unwrap();
 
-        let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0));
+        let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0), minigame::Minigame::Nothing);
 
         let objects = vec![
             object::Object::new(ctx, _door_closed_image_location, "/misc/door_opened.png",
-                (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 30.0))
+                (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 45.0), 
+                minigame::Minigame::Robber)
         ];
 
-        let event_timer_base = 30.0;
+        let event_timer_base = 15.0;
         let event_timer = event_timer_base;
 
+        let in_event = false;
+
+        let current_minigame = minigame::Minigame::Nothing;
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
-            accumulator, is_a_pressed, is_d_pressed, gc, bg_position, porch_object, objects, event_timer, event_timer_base };
+            accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
+            event_timer_base, in_event, current_minigame };
 
         Ok(s)
     }
 }
 
 fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (f32, f32), 
-            bg_image: graphics::Image, ctx: &mut Context, is_a_pressed: bool, is_d_pressed: bool) {
+            bg_image: graphics::Image, ctx: &mut Context, is_a_pressed: bool, is_d_pressed: bool,
+            in_event: bool) {
 
-    if is_a_pressed {
-        gc.center.0 -= pl.move_speed * get_dt(ctx);
-    }
+    if !in_event {
+        if is_a_pressed {
+            gc.center.0 -= pl.move_speed * get_dt(ctx);
+        }
 
-    if is_d_pressed {
-        gc.center.0 += pl.move_speed * get_dt(ctx);
-    }
+        if is_d_pressed {
+            gc.center.0 += pl.move_speed * get_dt(ctx);
+        }
 
-    if gc.center.0 <= bg_position.0 + pl.size.0 as f32/2.0 {
-        gc.center.0 = bg_position.0 + pl.size.0 as f32/2.0;
-    } else if gc.center.0 >= bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0 {
-        gc.center.0 = bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0;
+        if gc.center.0 <= bg_position.0 + pl.size.0 as f32/2.0 {
+            gc.center.0 = bg_position.0 + pl.size.0 as f32/2.0;
+        } else if gc.center.0 >= bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0 {
+            gc.center.0 = bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0;
+        }
     }
 }
 
@@ -127,35 +141,39 @@ impl event::EventHandler for MainState {
         self.current_duration = duration;
 
         self.accumulator += new_time;
+        // Update player based on user input
 
         // Updates that are non-critical time based
+        handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, 
+            self.is_a_pressed, self.is_d_pressed, self.in_event);
+
         // Update GUI, make dirty update later?
-        self.energy_bar.update(self.pl.energy);
+        if !self.in_event {
+            self.energy_bar.update(self.pl.energy);
 
-        // Update player based on user input
-        handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, self.is_a_pressed, self.is_d_pressed);
+            self.pl.update(ctx, WINDOW_SIZE);
 
-        self.pl.update(ctx, WINDOW_SIZE);
-
-        for i in &mut self.objects {
-            i.update(self.gc.center, self.pl.size);
+            for i in &mut self.objects {
+                i.update(self.gc.center, self.pl.size, self.is_x_pressed, &mut self.in_event, &mut self.current_minigame);
+            }
         }
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
             // Update fixed-interval updates
             // Timer for events
-            if self.event_timer > 0.0 {
-                self.event_timer-=1.0 * DT as f32;
-                println!("{:?}", self.event_timer);
-            } else {
-                self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
-                self.event_timer = self.event_timer_base;
+            if !self.in_event {
+                if self.event_timer > 0.0 {
+                    self.event_timer-=1.0 * DT as f32;
+                } else {
+                    self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.event_timer = self.event_timer_base;
+                }
+                self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
+                // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
+                // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
+                self.gc.update();
             }
-            self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
-            // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
-            // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
-            self.gc.update();
 
             self.accumulator -= DT;
         }
@@ -183,38 +201,41 @@ impl event::EventHandler for MainState {
             ..origin
         };
 
-        // Porch
-        self.porch_object.draw(self.gc.offset);
-        let porch_object_param = self.porch_object.return_param(dpiscale);
-        graphics::draw_ex(ctx, &self.porch_object.batch, porch_object_param)?;
-        self.porch_object.batch.clear();
+        if !self.in_event {
+            // Porch
+            self.porch_object.draw(self.gc.offset);
+            let porch_object_param = self.porch_object.return_param(dpiscale);
+            graphics::draw_ex(ctx, &self.porch_object.batch, porch_object_param)?;
+            self.porch_object.batch.clear();
 
-        // Background objects / Background itself
-        let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
-        graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
+            // Background objects / Background itself
+            let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
+            graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
 
-        // Objects
-        for i in &mut self.objects {
-            i.draw(self.gc.offset);
-            let object_param = i.return_param(dpiscale);
-            graphics::draw_ex(ctx, &i.batch, object_param)?;
-            i.batch.clear();
+            // Objects
+            for i in &mut self.objects {
+                i.draw(self.gc.offset);
+                let object_param = i.return_param(dpiscale);
+                graphics::draw_ex(ctx, &i.batch, object_param)?;
+                i.batch.clear();
+            }
+
+            // Player drawing
+            self.pl.draw();
+            let pl_param = self.pl.return_param(dpiscale);
+            graphics::draw_ex(ctx, &self.pl.batch, pl_param)?;
+            self.pl.batch.clear();
+            // End of player drawing
+            
+            // GUI drawing
+            self.energy_bar.draw(ctx);
+
+            // Drawables are drawn from their top-left corner.
+            // Text drawing for energy
+            let dest_point = graphics::Point2::new(self.energy_bar.position.0 - 75.0, self.energy_bar.position.1 + 2.0);
+            graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         }
-
-        // Player drawing
-        self.pl.draw();
-        let pl_param = self.pl.return_param(dpiscale);
-        graphics::draw_ex(ctx, &self.pl.batch, pl_param)?;
-        self.pl.batch.clear();
-        // End of player drawing
         
-        // GUI drawing
-        self.energy_bar.draw(ctx);
-
-        // Drawables are drawn from their top-left corner.
-        // Text drawing for energy
-        let dest_point = graphics::Point2::new(self.energy_bar.position.0 - 75.0, self.energy_bar.position.1 + 2.0);
-        graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
 
         self.frames += 1;
@@ -235,6 +256,9 @@ impl event::EventHandler for MainState {
         if keycode == keyboard::Keycode::D {
             self.is_d_pressed = true;
         }
+        if keycode == keyboard::Keycode::X {
+            self.is_x_pressed = true;
+        }
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _release: bool) {
@@ -243,6 +267,9 @@ impl event::EventHandler for MainState {
         }
         if keycode == keyboard::Keycode::D {
             self.is_d_pressed = false;
+        }
+        if keycode == keyboard::Keycode::X {
+            self.is_x_pressed = false;
         }
     }
 
