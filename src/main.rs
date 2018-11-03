@@ -48,7 +48,7 @@ impl MainState {
         let background_image = graphics::Image::new(ctx, "/misc/background.png").unwrap();
         
         // Player
-        let pl = player::Player::new(ctx, "/player/player_stand.png", (0.0, 0.0), 200.0);
+        let pl = player::Player::new(ctx, "/player/player_stand_r.png", (0.0, 0.0), 200.0);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);

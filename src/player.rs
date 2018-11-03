@@ -10,8 +10,10 @@ pub struct Player {
     pub max_speed: f32,
     pub size: (u32, u32),
     pub energy: f32,
-    pub walk_animation: animation::Animation,
+    pub walk_animation_right: animation::Animation,
+    pub walk_animation_left: animation::Animation,
     pub is_standing: bool,
+    pub direction: u32, // 0 is right, 1 is left
 }
 
 impl Player {
@@ -22,10 +24,14 @@ impl Player {
         let size: (u32, u32) = (player_image.width(), player_image.height());
         let energy = 100.0;
         let is_standing = true;
+        let direction = 0;
         // Animation
-        let walk_animation = animation::Animation::new(2, 0.3, vec![graphics::Image::new(ctx, "/player/player_move_2.png").unwrap(),
-            graphics::Image::new(ctx, "/player/player_move_1.png").unwrap()]);
-        Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation, is_standing }
+        let walk_animation_right = animation::Animation::new(2, 0.25, vec![graphics::Image::new(ctx, "/player/player_move_2_r.png").unwrap(),
+            graphics::Image::new(ctx, "/player/player_move_1_r.png").unwrap()]);
+        let walk_animation_left = animation::Animation::new(2, 0.25, vec![graphics::Image::new(ctx, "/player/player_move_2_l.png").unwrap(),
+            graphics::Image::new(ctx, "/player/player_move_1_l.png").unwrap()]);
+        Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation_right, 
+            walk_animation_left, is_standing, direction }
     }
 
     pub fn draw(&mut self) {    
@@ -51,14 +57,28 @@ impl Player {
     pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
         // Walk animation and resetting player picture to standing still.
         if is_d_pressed {
-            self.batch = self.walk_animation.run_animation(dt, self.batch.clone());
+            if self.direction == 1 {
+                self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
+            }
+            self.direction = 0;
+            self.batch = self.walk_animation_right.run_animation(dt, self.batch.clone());
             self.is_standing = false;
         } else if is_a_pressed {
+            if self.direction == 0 {
+                self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
+            }
+            self.direction = 1;
+            self.batch = self.walk_animation_left.run_animation(dt, self.batch.clone());
             self.is_standing = false;
         } else if !self.is_standing {
-            self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand.png").unwrap());
+            if self.direction == 0 {
+                self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_r.png").unwrap());
+            } else {
+                self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_l.png").unwrap());
+            }
             self.is_standing = true;
-            self.walk_animation.current_interval = self.walk_animation.interval - 0.01;
+            self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
+            self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
         }
     }
 
