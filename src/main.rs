@@ -30,6 +30,10 @@ struct MainState {
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
 
+fn get_dt(ctx: &mut Context) -> f32{
+    timer::duration_to_f64(timer::get_delta(ctx)) as f32
+}
+
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 12)?;
@@ -50,9 +54,11 @@ fn handle_input(pl: &mut player::Player, ctx: &mut Context,
                 is_a_pressed: bool, is_d_pressed: bool) {
 
     if is_a_pressed {
+        pl.position.0 -= pl.move_speed * get_dt(ctx);
     }
 
     if is_d_pressed {
+        pl.position.0 += pl.move_speed * get_dt(ctx);
     }
 }
 
@@ -73,8 +79,7 @@ impl event::EventHandler for MainState {
         // Update player based on user input
         handle_input(&mut self.pl, ctx, self.is_a_pressed, self.is_d_pressed);
 
-        // self.pl.update(ctx, WINDOW_SIZE);
-
+        self.pl.update(ctx, WINDOW_SIZE);
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
@@ -123,6 +128,36 @@ impl event::EventHandler for MainState {
         }
 
         Ok(())
+    }
+
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+        if keycode == keyboard::Keycode::Escape {
+            ctx.quit().expect("Should never fail");
+        }
+        if keycode == keyboard::Keycode::A {
+            self.is_a_pressed = true;
+        }
+        if keycode == keyboard::Keycode::D {
+            self.is_d_pressed = true;
+        }
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _release: bool) {
+        if keycode == keyboard::Keycode::A {
+            self.is_a_pressed = false;
+        }
+        if keycode == keyboard::Keycode::D {
+            self.is_d_pressed = false;
+        }
+    }
+
+    fn focus_event(&mut self, _ctx: &mut Context, _gained: bool) {
+
+    }
+
+    fn quit_event(&mut self, _ctx: &mut Context) -> bool {
+        println!("quit_event() callback called, quitting...");
+        false
     }
 }
 
