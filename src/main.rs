@@ -49,8 +49,6 @@ impl MainState {
         
         // Player
         let pl = player::Player::new(ctx, "/player_stand.png", (0.0, 0.0), 200.0);
-        let pl_walk_animation = animation::Animation::new(2, 50.0, vec![graphics::Image::new(ctx, "/player_move_1.png").unwrap(),
-            graphics::Image::new(ctx, "/player_move_2.png").unwrap()]);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);
@@ -105,8 +103,9 @@ impl event::EventHandler for MainState {
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
-            // Update physics
-            // self.pl.update_physics(ctx, DT, WINDOW_SIZE, self.is_a_pressed, self.is_d_pressed);
+            // Update fixed-interval updates
+            self.pl.update_fixed(DT, self.is_a_pressed, self.is_d_pressed);
+
             self.accumulator -= DT;
         }
         Ok(())
