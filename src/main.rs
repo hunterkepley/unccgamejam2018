@@ -3,6 +3,7 @@ extern crate ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::graphics;
+use ggez::graphics::DrawMode;
 use ggez::ContextBuilder;
 use ggez::timer;
 use ggez::{Context, GameResult};
@@ -16,11 +17,14 @@ use sdl2::mouse;
 use std::time::Instant;
 
 mod player;
+mod energy_bar;
 
 struct MainState {
     text: graphics::Text,
     frames: usize,
+    background_image: graphics::Image,
     pl: player::Player,
+    energy_bar: energy_bar::EnergyBar,
     current_time: f64,
     current_duration: Instant,
     accumulator: f64,
@@ -38,13 +42,25 @@ impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
         let font = graphics::Font::new(ctx, "/DejaVuSerif.ttf", 12)?;
         let text = graphics::Text::new(ctx, "INVIGORATION STATION", &font)?;
+        
+        // Stuff drawn in background / objects / background itself
+        let background_image = graphics::Image::new(ctx, "/background.png").unwrap();
+        
+        // Player
         let pl = player::Player::new(ctx, "/player.png", (0.0, 0.0), 200.0);
+        
+        // GUI elements
+        let energy_bar_size: (f32, f32) = (300.0, 35.0);
+        let energy_bar = energy_bar::EnergyBar::new((WINDOW_SIZE.0/2.0 - (energy_bar_size.0/2.0), WINDOW_SIZE.1-energy_bar_size.1), 
+            energy_bar_size, energy_bar_size.0); // (position: (f32, f32), size: (f32, f32), maxWidth: f32)
+
+        // Random variables for phsyics and such 
         let current_duration = Instant::now();
         let current_time = current_duration.elapsed().as_secs() as f64;
         let accumulator = 0.0;
         let is_a_pressed = false;
         let is_d_pressed = false;
-        let s = MainState { text, frames: 0, pl, current_duration, current_time, 
+        let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_duration, current_time, 
             accumulator, is_a_pressed, is_d_pressed };
         Ok(s)
     }
@@ -75,11 +91,16 @@ impl event::EventHandler for MainState {
 
         self.accumulator += new_time;
 
+        self.pl.energy -= 1.0 * get_dt(ctx);
+
         // Updates that are non-critical time based
+        // Update GUI, make dirty update later?
+        self.energy_bar.update(self.pl.energy);
+
         // Update player based on user input
         handle_input(&mut self.pl, ctx, self.is_a_pressed, self.is_d_pressed);
 
-        self.pl.update(ctx, WINDOW_SIZE);
+        self.pl.update(ctx, WINDOW_SIZE, self.energy_bar.size.1);
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
@@ -110,12 +131,19 @@ impl event::EventHandler for MainState {
             ..origin
         };
 
+        // Background objects / Background itself
+        let bg_dst = graphics::Point2::new(0.0, -5.0);
+        graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
+
         // Player drawing
         self.pl.draw();
         let pl_param = self.pl.return_param(dpiscale);
         graphics::draw_ex(ctx, &self.pl.batch, pl_param)?;
         self.pl.batch.clear();
         // End of player drawing
+        
+        // GUI drawing
+        self.energy_bar.draw(ctx);
 
         // Drawables are drawn from their top-left corner.
         let dest_point = graphics::Point2::new(10.0, 10.0);

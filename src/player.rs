@@ -9,6 +9,7 @@ pub struct Player {
     pub move_speed: f32,
     pub max_speed: f32,
     pub size: (u32, u32),
+    pub energy: f32,
 }
 
 impl Player {
@@ -17,7 +18,8 @@ impl Player {
         let batch = graphics::spritebatch::SpriteBatch::new(player_image.clone());
         let max_speed: f32 = move_speed;
         let size: (u32, u32) = (player_image.width(), player_image.height());
-        Player{player_image, batch, position, move_speed, max_speed, size}
+        let energy = 100.0;
+        Player{ player_image, batch, position, move_speed, max_speed, size, energy }
     }
 
     pub fn draw(&mut self) {    
@@ -29,8 +31,15 @@ impl Player {
         );
     }
 
-    pub fn update(&mut self, ctx: &mut Context, window_size: (f32, f32)) {
-        self.position.1 = window_size.1 - self.size.1 as f32;
+    pub fn update(&mut self, ctx: &mut Context, window_size: (f32, f32), bottom_offset: f32) {
+        // bottom offset for the bar at the bottom where the GUI is being rendered.
+        self.position.1 = window_size.1 - self.size.1 as f32 - bottom_offset;
+
+        if self.position.0 <= 0.0 {
+            self.position.0 = 0.0;
+        } else if self.position.0 + self.size.0 as f32 >= window_size.0 {
+            self.position.0 = window_size.0 - self.size.0 as f32;
+        }
     }
 
     pub fn return_param(&mut self, dpi_scale: graphics::Point2) -> graphics::DrawParam {
