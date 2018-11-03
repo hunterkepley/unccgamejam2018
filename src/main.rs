@@ -22,6 +22,7 @@ mod energy_bar;
 mod camera;
 mod object;
 mod minigame;
+mod robberminigame;
 
 struct MainState {
     text: graphics::Text,
@@ -43,6 +44,7 @@ struct MainState {
     event_timer_base: f32,
     in_event: bool,
     current_minigame: minigame::Minigame,
+    robber_minigame: robberminigame::RobberMinigame,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -99,6 +101,8 @@ impl MainState {
         let in_event = false;
 
         let current_minigame = minigame::Minigame::Nothing;
+
+        let robber_minigame = robberminigame::RobberMinigame::new();
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
