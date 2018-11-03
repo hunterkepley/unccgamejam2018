@@ -10,7 +10,7 @@ pub struct Animation {
 
 impl Animation {
     pub fn new(frames: u32, interval: f32, images: Vec<graphics::Image>) -> Animation {
-        let current_interval = 0.0;
+        let current_interval = interval-0.01;
         let frame_number = 0;
         Animation{ frames, interval, current_interval, frame_number, images }
     }

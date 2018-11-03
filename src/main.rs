@@ -104,7 +104,7 @@ impl event::EventHandler for MainState {
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
             // Update fixed-interval updates
-            self.pl.update_fixed(DT, self.is_a_pressed, self.is_d_pressed);
+            self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
 
             self.accumulator -= DT;
         }

@@ -11,6 +11,7 @@ pub struct Player {
     pub size: (u32, u32),
     pub energy: f32,
     pub walk_animation: animation::Animation,
+    pub is_standing: bool,
 }
 
 impl Player {
@@ -20,10 +21,11 @@ impl Player {
         let max_speed: f32 = move_speed;
         let size: (u32, u32) = (player_image.width(), player_image.height());
         let energy = 100.0;
+        let is_standing = true;
         // Animation
-        let walk_animation = animation::Animation::new(2, 0.5, vec![graphics::Image::new(ctx, "/player_move_1.png").unwrap(),
-            graphics::Image::new(ctx, "/player_move_2.png").unwrap()]);
-        Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation }
+        let walk_animation = animation::Animation::new(2, 0.5, vec![graphics::Image::new(ctx, "/player_move_2.png").unwrap(),
+            graphics::Image::new(ctx, "/player_move_1.png").unwrap()]);
+        Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation, is_standing }
     }
 
     pub fn draw(&mut self) {    
@@ -46,9 +48,16 @@ impl Player {
         }
     }
 
-    pub fn update_fixed(&mut self, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
+    pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
         if is_d_pressed {
             self.batch = self.walk_animation.run_animation(dt, self.batch.clone());
+            self.is_standing = false;
+        } else if is_a_pressed {
+            self.is_standing = false;
+        } else if !self.is_standing {
+            self.batch.set_image(graphics::Image::new(ctx, "/player_stand.png").unwrap());
+            self.is_standing = true;
+            self.walk_animation.current_interval = self.walk_animation.interval - 0.01;
         }
     }
 
