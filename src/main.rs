@@ -35,7 +35,10 @@ struct MainState {
     is_d_pressed: bool,
     gc: camera::Camera,
     bg_position: (f32, f32),
+    porch_object: object::Object,
     objects: Vec<object::Object>,
+    event_timer: f32,
+    event_timer_base: f32,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -77,11 +80,18 @@ impl MainState {
         let _door_closed_image_location = "/misc/door_closed.png";
         let _door_closed_image = graphics::Image::new(ctx, _door_closed_image_location).unwrap();
 
-        let objects = vec![object::Object::new(ctx, _door_closed_image_location, 
-            (background_image.width() as f32 - _door_closed_image.width() as f32 / 2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 30.0))];
+        let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0));
+
+        let objects = vec![
+            object::Object::new(ctx, _door_closed_image_location, "/misc/door_opened.png",
+                (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 30.0))
+        ];
+
+        let event_timer_base = 30.0;
+        let event_timer = event_timer_base;
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
-            accumulator, is_a_pressed, is_d_pressed, gc, bg_position, objects };
+            accumulator, is_a_pressed, is_d_pressed, gc, bg_position, porch_object, objects, event_timer, event_timer_base };
 
         Ok(s)
     }
@@ -128,12 +138,20 @@ impl event::EventHandler for MainState {
         self.pl.update(ctx, WINDOW_SIZE);
 
         for i in &mut self.objects {
-            i.update();
+            i.update(self.gc.center, self.pl.size);
         }
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
             // Update fixed-interval updates
+            // Timer for events
+            if self.event_timer > 0.0 {
+                self.event_timer-=1.0 * DT as f32;
+                println!("{:?}", self.event_timer);
+            } else {
+                self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
+                self.event_timer = self.event_timer_base;
+            }
             self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
             // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
             // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
@@ -164,6 +182,12 @@ impl event::EventHandler for MainState {
             scale: dpiscale,
             ..origin
         };
+
+        // Porch
+        self.porch_object.draw(self.gc.offset);
+        let porch_object_param = self.porch_object.return_param(dpiscale);
+        graphics::draw_ex(ctx, &self.porch_object.batch, porch_object_param)?;
+        self.porch_object.batch.clear();
 
         // Background objects / Background itself
         let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
