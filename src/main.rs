@@ -45,6 +45,7 @@ struct MainState {
     in_event: bool,
     current_minigame: minigame::Minigame,
     robber_minigame: robberminigame::RobberMinigame,
+    solid_background: graphics::Image
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -100,6 +101,8 @@ impl MainState {
 
         let in_event = false;
 
+        let solid_background = graphics::Image::new(ctx, "/misc/solid_background.png").unwrap();
+
         let current_minigame = minigame::Minigame::Nothing;
 
         let robber_minigame = robberminigame::RobberMinigame::new(ctx, WINDOW_SIZE, "/burglar/burglar_live.png", 
@@ -107,7 +110,7 @@ impl MainState {
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
-            event_timer_base, in_event, current_minigame, robber_minigame };
+            event_timer_base, in_event, current_minigame, robber_minigame, solid_background };
 
         Ok(s)
     }
@@ -244,6 +247,9 @@ impl event::EventHandler for MainState {
             let dest_point = graphics::Point2::new(self.energy_bar.position.0 - 75.0, self.energy_bar.position.1 + 2.0);
             graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         } else {
+            let bg_dst = graphics::Point2::new(0.0, 0.0);
+            graphics::draw(ctx, &self.solid_background, bg_dst, 0.0)?;
+
             if self.current_minigame == minigame::Minigame::Robber {
                 self.robber_minigame.draw();
                 let robber_param = self.robber_minigame.return_param(dpiscale);
@@ -251,6 +257,15 @@ impl event::EventHandler for MainState {
                 graphics::draw_ex(ctx, &self.robber_minigame.gun_batch, robber_param)?;
                 self.robber_minigame.robber_batch.clear();
                 self.robber_minigame.gun_batch.clear();
+                let shots_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 45.0);
+                graphics::draw(ctx, &self.robber_minigame.shots_left_text, shots_left_dst, 0.0)?;
+                let misses_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 90.0);
+                graphics::draw(ctx, &self.robber_minigame.misses_left_text, misses_left_dst, 0.0)?;
+                let time_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 135.0);
+                graphics::draw(ctx, &self.robber_minigame.time_left_text, time_left_dst, 0.0)?;
+                let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.robber_minigame.action_text.get_dimensions().w / 2.0,
+                    0.0);
+                graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;
             }
         }
         

@@ -9,6 +9,15 @@ pub struct RobberMinigame {
     pub gun_batch: graphics::spritebatch::SpriteBatch,
     pub robber_position: (f32, f32),
     pub gun_position: (f32, f32),
+    pub move_interval: f32,
+    pub move_interval_base: f32,
+    pub shots_left: i32, // How many needed to kill
+    pub misses_left: i32, // How many you can miss
+    pub time_left: f32, //......time left
+    pub shots_left_text: graphics::Text,
+    pub misses_left_text: graphics::Text,
+    pub time_left_text: graphics::Text,
+    pub action_text: graphics::Text,
 }
 
 impl RobberMinigame {
@@ -22,8 +31,26 @@ impl RobberMinigame {
         let gun_batch = graphics::spritebatch::SpriteBatch::new(gun_image.clone());
         let robber_position = (0.0, 0.0);
         let gun_position = (window_size.0 - gun_image.width() as f32, window_size.1 - gun_image.height() as f32);
+
+        let font = graphics::Font::new(ctx, "/fonts/DejaVuSerif.ttf", 24).unwrap();
+        let big_font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 36).unwrap();
+        
+        let shots_left_text = graphics::Text::new(ctx, "Shots left: ", &font).unwrap();
+        let misses_left_text = graphics::Text::new(ctx, "Misses left: ", &font).unwrap();
+        let time_left_text = graphics::Text::new(ctx, "Time left: ", &font).unwrap();
+        let action_text = graphics::Text::new(ctx, "Press X to shoot!", &big_font).unwrap();
+
+        let move_interval_base = 10.0;
+        let move_interval = move_interval_base;
+
+        let shots_left = 10;
+        let misses_left = 2;
+
+        let time_left = 50.0;
+
         RobberMinigame{ robber_image, robber_dead_image, gun_image, gun_fired_image, robber_batch, gun_batch,
-        robber_position, gun_position }
+        robber_position, gun_position, move_interval, move_interval_base, shots_left, misses_left, time_left,
+        shots_left_text, misses_left_text, time_left_text, action_text }
     }
 
     pub fn update(&mut self) {
