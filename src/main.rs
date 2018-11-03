@@ -17,6 +17,7 @@ use sdl2::mouse;
 use std::time::Instant;
 
 mod player;
+mod animation;
 mod energy_bar;
 
 struct MainState {

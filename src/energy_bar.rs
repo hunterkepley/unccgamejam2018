@@ -10,6 +10,7 @@ pub struct EnergyBar {
     pub rect: graphics::Rect,
     pub energy_rect: graphics::Rect,
     pub offset: f32,
+    pub animation: animation::Animation,
 }
 
 impl EnergyBar {
