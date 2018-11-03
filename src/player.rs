@@ -52,13 +52,13 @@ impl Player {
         );
     }
 
-    pub fn update(&mut self, _ctx: &mut Context, window_size: (f32, f32)) {
+    pub fn update(&mut self, _ctx: &mut Context, bg_size: (f32, f32)) {
         // bottom offset for the bar at the bottom where the GUI is being rendered.
 
         /*if self.position.0 <= 0.0 {
             self.position.0 = 0.0;
-        } else if self.position.0 + self.size.0 as f32 >= window_size.0 {
-            self.position.0 = window_size.0 - self.size.0 as f32;
+        } else if self.position.0 + self.size.0 as f32 >= bg_size.0 {
+            self.position.0 = bg_size.0 - self.size.0 as f32;
         }*/
     }
 
