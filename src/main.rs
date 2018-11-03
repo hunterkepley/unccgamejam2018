@@ -67,7 +67,7 @@ impl MainState {
         let is_a_pressed = false;
         let is_d_pressed = false;
 
-        let gc = camera::Camera::new((0.0, 0.0), WINDOW_SIZE);
+        let gc = camera::Camera::new((0.0, 0.0), (WINDOW_SIZE.0, background_image.height() as f32));
 
         let bg_position = (0.0, 0.0);
 
