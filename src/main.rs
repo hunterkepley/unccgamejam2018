@@ -102,11 +102,12 @@ impl MainState {
 
         let current_minigame = minigame::Minigame::Nothing;
 
-        let robber_minigame = robberminigame::RobberMinigame::new();
+        let robber_minigame = robberminigame::RobberMinigame::new(ctx, WINDOW_SIZE, "/burglar/burglar_live.png", 
+        "/burglar/burglar_dead.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
-            event_timer_base, in_event, current_minigame };
+            event_timer_base, in_event, current_minigame, robber_minigame };
 
         Ok(s)
     }
@@ -177,6 +178,10 @@ impl event::EventHandler for MainState {
                 // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
                 // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
                 self.gc.update();
+            } else {
+                if self.current_minigame == minigame::Minigame::Robber {
+                    self.robber_minigame.update();
+                }
             }
 
             self.accumulator -= DT;
@@ -238,6 +243,15 @@ impl event::EventHandler for MainState {
             // Text drawing for energy
             let dest_point = graphics::Point2::new(self.energy_bar.position.0 - 75.0, self.energy_bar.position.1 + 2.0);
             graphics::draw(ctx, &self.text, dest_point, 0.0)?;
+        } else {
+            if self.current_minigame == minigame::Minigame::Robber {
+                self.robber_minigame.draw();
+                let robber_param = self.robber_minigame.return_param(dpiscale);
+                graphics::draw_ex(ctx, &self.robber_minigame.robber_batch, robber_param)?;
+                graphics::draw_ex(ctx, &self.robber_minigame.gun_batch, robber_param)?;
+                self.robber_minigame.robber_batch.clear();
+                self.robber_minigame.gun_batch.clear();
+            }
         }
         
         graphics::present(ctx);
