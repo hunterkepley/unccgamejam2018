@@ -20,6 +20,7 @@ mod player;
 mod animation;
 mod energy_bar;
 mod camera;
+mod object;
 
 struct MainState {
     text: graphics::Text,
@@ -34,6 +35,7 @@ struct MainState {
     is_d_pressed: bool,
     gc: camera::Camera,
     bg_position: (f32, f32),
+    objects: Vec<object::Object>,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -71,8 +73,15 @@ impl MainState {
 
         let bg_position = (0.0, 0.0);
 
+        // game objects
+        let _door_closed_image_location = "/misc/door_closed.png";
+        let _door_closed_image = graphics::Image::new(ctx, _door_closed_image_location).unwrap();
+
+        let objects = vec![object::Object::new(ctx, _door_closed_image_location, 
+            (background_image.width() as f32 - _door_closed_image.width() as f32, WINDOW_SIZE.1 - _door_closed_image.height() as f32))];
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
-            accumulator, is_a_pressed, is_d_pressed, gc, bg_position };
+            accumulator, is_a_pressed, is_d_pressed, gc, bg_position, objects };
 
         Ok(s)
     }
@@ -117,6 +126,10 @@ impl event::EventHandler for MainState {
         handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, self.is_a_pressed, self.is_d_pressed);
 
         self.pl.update(ctx, WINDOW_SIZE);
+
+        for i in &mut self.objects {
+            i.update();
+        }
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
@@ -125,8 +138,6 @@ impl event::EventHandler for MainState {
             // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
             // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
             self.gc.update();
-
-            println!("{:?} {:?}", self.gc.center.0, self.pl.position.0);
 
             self.accumulator -= DT;
         }
@@ -149,13 +160,6 @@ impl event::EventHandler for MainState {
                 size.1 as f32 / dsize.1 as f32,
             )
         };
-        let pl_scale = {
-            let dsize = graphics::get_drawable_size(ctx);
-            graphics::Point2::new(
-                size.0 as f32 / dsize.0 as f32,
-                size.1 as f32 / dsize.1 as f32,
-            )
-        };
         let _canvas_origin = graphics::DrawParam {
             scale: dpiscale,
             ..origin
@@ -165,9 +169,17 @@ impl event::EventHandler for MainState {
         let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
         graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
 
+        // Objects
+        for i in &mut self.objects {
+            i.draw();
+            let object_param = i.return_param(dpiscale);
+            graphics::draw_ex(ctx, &i.batch, object_param)?;
+            i.batch.clear();
+        }
+
         // Player drawing
         self.pl.draw();
-        let pl_param = self.pl.return_param(pl_scale);
+        let pl_param = self.pl.return_param(dpiscale);
         graphics::draw_ex(ctx, &self.pl.batch, pl_param)?;
         self.pl.batch.clear();
         // End of player drawing
