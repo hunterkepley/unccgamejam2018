@@ -41,19 +41,19 @@ fn get_dt(ctx: &mut Context) -> f32{
 
 impl MainState {
     fn new(ctx: &mut Context) -> GameResult<MainState> {
-        let font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 12)?;
-        let text = graphics::Text::new(ctx, "INVIGORATION STATION", &font)?;
+        let font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 16)?;
+        let text = graphics::Text::new(ctx, "Energy", &font)?;
         
         // Stuff drawn in background / objects / background itself
         let background_image = graphics::Image::new(ctx, "/misc/background.png").unwrap();
-        
-        // Player
-        let pl = player::Player::new(ctx, "/player/player_stand_r.png", (0.0, 0.0), 200.0);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);
         let energy_bar = energy_bar::EnergyBar::new((WINDOW_SIZE.0/2.0 - (energy_bar_size.0/2.0), WINDOW_SIZE.1-energy_bar_size.1), 
             energy_bar_size, energy_bar_size.0); // (position: (f32, f32), size: (f32, f32), maxWidth: f32)
+
+        // Player
+        let pl = player::Player::new(ctx, "/player/player_stand_r.png", (0.0, 0.0), 200.0, WINDOW_SIZE, energy_bar.size.1);
 
         // Random variables for phsyics and such 
         let current_duration = Instant::now();
@@ -99,7 +99,7 @@ impl event::EventHandler for MainState {
         // Update player based on user input
         handle_input(&mut self.pl, ctx, self.is_a_pressed, self.is_d_pressed);
 
-        self.pl.update(ctx, WINDOW_SIZE, self.energy_bar.size.1);
+        self.pl.update(ctx, WINDOW_SIZE);
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
@@ -153,8 +153,8 @@ impl event::EventHandler for MainState {
         self.energy_bar.draw(ctx);
 
         // Drawables are drawn from their top-left corner.
-        // text
-        let dest_point = graphics::Point2::new(10.0, 10.0);
+        // Text drawing for energy
+        let dest_point = graphics::Point2::new(self.energy_bar.position.0 - 75.0, self.energy_bar.position.1 + 2.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
 

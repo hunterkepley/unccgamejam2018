@@ -6,6 +6,7 @@ pub struct Player {
     pub player_image: graphics::Image,
     pub batch: graphics::spritebatch::SpriteBatch,
     pub position: (f32, f32),
+    pub base_height: f32,
     pub move_speed: f32,
     pub max_speed: f32,
     pub size: (u32, u32),
@@ -14,10 +15,13 @@ pub struct Player {
     pub walk_animation_left: animation::Animation,
     pub is_standing: bool,
     pub direction: u32, // 0 is right, 1 is left
+    pub jump_wobble_height: f32, // for when the player is walking and hops up and down
+    pub base_wobble_height: f32,
+    pub wobbling_up: bool, // true is up, false is down
 }
 
 impl Player {
-    pub fn new(ctx: &mut Context, image_location: &str, position: (f32, f32), move_speed: f32) -> Player {
+    pub fn new(ctx: &mut Context, image_location: &str, _position: (f32, f32), move_speed: f32, window_size: (f32, f32), bottom_offset: f32) -> Player {
         let player_image = graphics::Image::new(ctx, image_location).unwrap();
         let batch = graphics::spritebatch::SpriteBatch::new(player_image.clone());
         let max_speed: f32 = move_speed;
@@ -30,8 +34,13 @@ impl Player {
             graphics::Image::new(ctx, "/player/player_move_1_r.png").unwrap()]);
         let walk_animation_left = animation::Animation::new(2, 0.25, vec![graphics::Image::new(ctx, "/player/player_move_2_l.png").unwrap(),
             graphics::Image::new(ctx, "/player/player_move_1_l.png").unwrap()]);
-        Player{ player_image, batch, position, move_speed, max_speed, size, energy, walk_animation_right, 
-            walk_animation_left, is_standing, direction }
+        let base_wobble_height = 20.0;
+        let jump_wobble_height = 0.0;
+        let wobbling_up = true;
+        let position: (f32, f32) = (_position.0, window_size.1 - size.1 as f32 - bottom_offset);
+        let base_height = position.1;
+        Player{ player_image, batch, position, base_height, move_speed, max_speed, size, energy, walk_animation_right, 
+            walk_animation_left, is_standing, direction, jump_wobble_height, base_wobble_height, wobbling_up }
     }
 
     pub fn draw(&mut self) {    
@@ -43,9 +52,8 @@ impl Player {
         );
     }
 
-    pub fn update(&mut self, ctx: &mut Context, window_size: (f32, f32), bottom_offset: f32) {
+    pub fn update(&mut self, _ctx: &mut Context, window_size: (f32, f32)) {
         // bottom offset for the bar at the bottom where the GUI is being rendered.
-        self.position.1 = window_size.1 - self.size.1 as f32 - bottom_offset;
 
         if self.position.0 <= 0.0 {
             self.position.0 = 0.0;
@@ -55,6 +63,24 @@ impl Player {
     }
 
     pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
+        let jump_wobble_interval = 175.0;
+
+        // Player bouncing whilst walking is in here
+        if is_a_pressed || is_d_pressed {
+            if self.wobbling_up {
+                self.jump_wobble_height += jump_wobble_interval * dt as f32;
+                if self.jump_wobble_height >= self.base_wobble_height {
+                    self.wobbling_up = false;
+                }
+            } else {
+                self.jump_wobble_height -= jump_wobble_interval * dt as f32;
+                if self.jump_wobble_height <= 0.0 {
+                    self.wobbling_up = true;
+                }
+            }
+            self.position.1 = self.base_height - self.jump_wobble_height;
+        }
+
         // Walk animation and resetting player picture to standing still.
         if is_d_pressed {
             if self.direction == 1 {
@@ -79,6 +105,13 @@ impl Player {
             self.is_standing = true;
             self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
             self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
+        } else {
+            if self.jump_wobble_height > 0.0 {
+                self.jump_wobble_height -= jump_wobble_interval * dt as f32;
+            } else if self.jump_wobble_height != 0.0 { // just incase it goes into negative numbers.
+                self.jump_wobble_height = 0.0;
+            }
+            self.position.1 = self.base_height - self.jump_wobble_height;
         }
     }
 
