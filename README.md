@@ -1,3 +1,7 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+# Invigoration Station
+
 This game was made for a game jam [49 hours] for UNCC
 
 All programming by me, and all art by Richard Wei
