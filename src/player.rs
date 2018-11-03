@@ -49,6 +49,7 @@ impl Player {
     }
 
     pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
+        // Walk animation and resetting player picture to standing still.
         if is_d_pressed {
             self.batch = self.walk_animation.run_animation(dt, self.batch.clone());
             self.is_standing = false;
@@ -70,3 +71,13 @@ impl Player {
         }
     }
 }
+
+/*
+let param = graphics::DrawParam {
+    dest: graphics::Point2::new(pos.0.x, pos.0.y),
+    rotation: orientation.0 + asset.rotation,
+    offset: na::Point2::new(0.5, 0.5),
+    scale: na::Point2::new(render.scale * scale_y, render.scale) * asset.scale,
+    ..Default::default()
+};
+*/

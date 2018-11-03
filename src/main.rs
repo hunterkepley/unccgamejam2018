@@ -126,6 +126,13 @@ impl event::EventHandler for MainState {
                 size.1 as f32 / dsize.1 as f32,
             )
         };
+        let pl_scale = {
+            let dsize = graphics::get_drawable_size(ctx);
+            graphics::Point2::new(
+                size.0 as f32 / dsize.0 as f32,
+                size.1 as f32 / dsize.1 as f32,
+            )
+        };
         let _canvas_origin = graphics::DrawParam {
             scale: dpiscale,
             ..origin
@@ -137,7 +144,7 @@ impl event::EventHandler for MainState {
 
         // Player drawing
         self.pl.draw();
-        let pl_param = self.pl.return_param(dpiscale);
+        let pl_param = self.pl.return_param(pl_scale);
         graphics::draw_ex(ctx, &self.pl.batch, pl_param)?;
         self.pl.batch.clear();
         // End of player drawing
@@ -146,6 +153,7 @@ impl event::EventHandler for MainState {
         self.energy_bar.draw(ctx);
 
         // Drawables are drawn from their top-left corner.
+        // text
         let dest_point = graphics::Point2::new(10.0, 10.0);
         graphics::draw(ctx, &self.text, dest_point, 0.0)?;
         graphics::present(ctx);
