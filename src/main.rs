@@ -78,7 +78,7 @@ impl MainState {
         let _door_closed_image = graphics::Image::new(ctx, _door_closed_image_location).unwrap();
 
         let objects = vec![object::Object::new(ctx, _door_closed_image_location, 
-            (background_image.width() as f32 - _door_closed_image.width() as f32, WINDOW_SIZE.1 - _door_closed_image.height() as f32))];
+            (background_image.width() as f32 - _door_closed_image.width() as f32 / 2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 30.0))];
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, gc, bg_position, objects };
@@ -171,7 +171,7 @@ impl event::EventHandler for MainState {
 
         // Objects
         for i in &mut self.objects {
-            i.draw();
+            i.draw(self.gc.offset);
             let object_param = i.return_param(dpiscale);
             graphics::draw_ex(ctx, &i.batch, object_param)?;
             i.batch.clear();

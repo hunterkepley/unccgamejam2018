@@ -16,13 +16,13 @@ impl Object {
     }
 
     pub fn update(&mut self) {
-        println!("{:?} {:?}", self.position.0, self.position.1);
+        
     }
 
-    pub fn draw(&mut self) {
+    pub fn draw(&mut self, camera_offset: (f32, f32)) {
         self.batch.add(
             graphics::DrawParam {
-                dest: graphics::Point2::new(self.position.0, self.position.1),
+                dest: graphics::Point2::new(self.position.0+camera_offset.0, self.position.1+camera_offset.1),
                 ..Default::default()
             }
         );
