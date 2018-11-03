@@ -31,6 +31,7 @@ struct MainState {
     accumulator: f64,
     is_a_pressed: bool,
     is_d_pressed: bool,
+    camera_position: (f32, f32),
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -61,6 +62,7 @@ impl MainState {
         let accumulator = 0.0;
         let is_a_pressed = false;
         let is_d_pressed = false;
+        let camera_position = (pl.position.0 / 2.0 - pl.size.0 / 2.0, pl.position.1 / 2.0 - pl.size.1 / 2.0);
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_duration, current_time, 
             accumulator, is_a_pressed, is_d_pressed };
         Ok(s)
