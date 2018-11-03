@@ -1,6 +1,6 @@
-extern crate ggez;
-
 use ggez::{Context, graphics};
+
+use super::animation;
 
 pub struct Player {
     pub player_image: graphics::Image,

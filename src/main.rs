@@ -49,6 +49,8 @@ impl MainState {
         
         // Player
         let pl = player::Player::new(ctx, "/player_stand.png", (0.0, 0.0), 200.0);
+        let pl_walk_animation = animation::Animation::new(2, 50.0, vec![graphics::Image::new(ctx, "/player_move_1.png").unwrap(),
+            graphics::Image::new(ctx, "/player_move_2.png").unwrap()]);
         
         // GUI elements
         let energy_bar_size: (f32, f32) = (300.0, 35.0);
