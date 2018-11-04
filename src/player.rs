@@ -11,6 +11,7 @@ pub struct Player {
     pub max_speed: f32,
     pub size: (u32, u32),
     pub energy: f32,
+    pub energy_base: f32,
     pub walk_animation_right: animation::Animation,
     pub walk_animation_left: animation::Animation,
     pub is_standing: bool,
@@ -26,7 +27,8 @@ impl Player {
         let batch = graphics::spritebatch::SpriteBatch::new(player_image.clone());
         let max_speed: f32 = move_speed;
         let size: (u32, u32) = (player_image.width(), player_image.height());
-        let energy = 100.0;
+        let energy_base = 100.0;
+        let energy = energy_base;
         let is_standing = true;
         let direction = 0;
         // Animation
@@ -40,7 +42,7 @@ impl Player {
         let position: (f32, f32) = (_position.0, window_size.1 - size.1 as f32 - bottom_offset);
         let base_height = position.1;
         Player{ player_image, batch, position, base_height, move_speed, max_speed, size, energy, walk_animation_right, 
-            walk_animation_left, is_standing, direction, jump_wobble_height, base_wobble_height, wobbling_up }
+            walk_animation_left, is_standing, direction, jump_wobble_height, base_wobble_height, wobbling_up, energy_base }
     }
 
     pub fn draw(&mut self) {    
@@ -62,61 +64,63 @@ impl Player {
         }*/
     }
 
-    pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool) {
-        let jump_wobble_interval = 175.0;
+    pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool, win: bool, lose: bool) {
+        if !win && !lose {
+            let jump_wobble_interval = 175.0;
 
-        self.energy -= 1.0 * dt as f32;
-        if self.energy >= 100.0 {
-            self.energy = 100.0;
-        }
-
-        // Player bouncing whilst walking is in here
-        if is_a_pressed || is_d_pressed {
-            if self.wobbling_up {
-                self.jump_wobble_height += jump_wobble_interval * dt as f32;
-                if self.jump_wobble_height >= self.base_wobble_height {
-                    self.wobbling_up = false;
-                }
-            } else {
-                self.jump_wobble_height -= jump_wobble_interval * dt as f32;
-                if self.jump_wobble_height <= 0.0 {
-                    self.wobbling_up = true;
-                }
+            self.energy -= 4.0 * dt as f32;
+            if self.energy >= 100.0 {
+                self.energy = 100.0;
             }
-            self.position.1 = self.base_height - self.jump_wobble_height;
-        }
 
-        // Walk animation and resetting player picture to standing still.
-        if is_d_pressed {
-            if self.direction == 1 {
+            // Player bouncing whilst walking is in here
+            if is_a_pressed || is_d_pressed {
+                if self.wobbling_up {
+                    self.jump_wobble_height += jump_wobble_interval * dt as f32;
+                    if self.jump_wobble_height >= self.base_wobble_height {
+                        self.wobbling_up = false;
+                    }
+                } else {
+                    self.jump_wobble_height -= jump_wobble_interval * dt as f32;
+                    if self.jump_wobble_height <= 0.0 {
+                        self.wobbling_up = true;
+                    }
+                }
+                self.position.1 = self.base_height - self.jump_wobble_height;
+            }
+
+            // Walk animation and resetting player picture to standing still.
+            if is_d_pressed {
+                if self.direction == 1 {
+                    self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
+                }
+                self.direction = 0;
+                self.batch = self.walk_animation_right.run_animation(dt, self.batch.clone());
+                self.is_standing = false;
+            } else if is_a_pressed {
+                if self.direction == 0 {
+                    self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
+                }
+                self.direction = 1;
+                self.batch = self.walk_animation_left.run_animation(dt, self.batch.clone());
+                self.is_standing = false;
+            } else if !self.is_standing {
+                if self.direction == 0 {
+                    self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_r.png").unwrap());
+                } else {
+                    self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_l.png").unwrap());
+                }
+                self.is_standing = true;
                 self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
-            }
-            self.direction = 0;
-            self.batch = self.walk_animation_right.run_animation(dt, self.batch.clone());
-            self.is_standing = false;
-        } else if is_a_pressed {
-            if self.direction == 0 {
                 self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
-            }
-            self.direction = 1;
-            self.batch = self.walk_animation_left.run_animation(dt, self.batch.clone());
-            self.is_standing = false;
-        } else if !self.is_standing {
-            if self.direction == 0 {
-                self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_r.png").unwrap());
             } else {
-                self.batch.set_image(graphics::Image::new(ctx, "/player/player_stand_l.png").unwrap());
+                if self.jump_wobble_height > 0.0 {
+                    self.jump_wobble_height -= jump_wobble_interval * dt as f32;
+                } else if self.jump_wobble_height != 0.0 { // just incase it goes into negative numbers.
+                    self.jump_wobble_height = 0.0;
+                }
+                self.position.1 = self.base_height - self.jump_wobble_height;
             }
-            self.is_standing = true;
-            self.walk_animation_right.current_interval = self.walk_animation_right.interval - 0.01;
-            self.walk_animation_left.current_interval = self.walk_animation_left.interval - 0.01;
-        } else {
-            if self.jump_wobble_height > 0.0 {
-                self.jump_wobble_height -= jump_wobble_interval * dt as f32;
-            } else if self.jump_wobble_height != 0.0 { // just incase it goes into negative numbers.
-                self.jump_wobble_height = 0.0;
-            }
-            self.position.1 = self.base_height - self.jump_wobble_height;
         }
     }
 

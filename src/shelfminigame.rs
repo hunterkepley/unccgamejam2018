@@ -78,7 +78,7 @@ impl ShelfMinigame {
         let shelf_position = (0.0, 0.0);
         let duster_base_position = (400.0, 300.0);
         let duster_position = duster_base_position;
-        let trophy_position = (0.0, 0.0);
+        let trophy_position = (0.0, 10.0);
 
         let duster_move_timer_base = swipe_cooldown_base/2.0;
         let duster_move_timer = duster_move_timer_base;
@@ -157,7 +157,7 @@ impl ShelfMinigame {
                 self.duster_position.1 = self.duster_base_position.1;
                 
                 *energy -= 30.0;
-                return false;
+                return true;
             }
         }
 
@@ -182,10 +182,10 @@ impl ShelfMinigame {
                 self.duster_position.1 = self.duster_base_position.1;
                 
                 *energy += 20.0;
-                return false;
+                return true;
             }
         }
-        true
+        false
     }
 
     pub fn draw(&mut self) { 

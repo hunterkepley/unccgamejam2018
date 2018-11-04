@@ -72,6 +72,11 @@ struct MainState {
     in_menu: bool,
     end_game: bool,
     restart_game: bool,
+    menu_image: graphics::Image,
+    end_timer: f32,
+    end_timer_base: f32,
+    player_win_image: graphics::Image,
+    player_lose_image: graphics::Image
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -152,7 +157,7 @@ impl MainState {
 
         let game_time_bar = timebar::TimeBar::new((30.0, 0.0), (WINDOW_SIZE.0 - 60.0, 30.0), WINDOW_SIZE.0 - 60.0);
 
-        let game_time_left_base = 5.0;
+        let game_time_left_base = 40.0;
         let game_time_left = game_time_left_base;
 
         let win = false;
@@ -174,11 +179,20 @@ impl MainState {
         let end_game = false;
         let restart_game = false;
 
+        let menu_image = graphics::Image::new(ctx, "/misc/menu.png").unwrap();
+
+        let end_timer_base = 1.5;
+        let end_timer = end_timer_base;
+
+        let player_win_image = graphics::Image::new(ctx, "/player/player_win.png").unwrap();
+        let player_lose_image = graphics::Image::new(ctx, "/player/player_lose.png").unwrap();
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
-            notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu, end_game, restart_game };
+            notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu, end_game, restart_game,
+            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image };
 
         Ok(s)
     }
@@ -186,9 +200,10 @@ impl MainState {
 
 fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (f32, f32), 
             bg_image: graphics::Image, ctx: &mut Context, is_a_pressed: bool, is_d_pressed: bool,
-            is_x_pressed: bool, in_event: bool, in_menu: &mut bool, end_game: &mut bool, restart_game: &mut bool) {
+            is_x_pressed: bool, in_event: bool, in_menu: &mut bool, end_game: &mut bool, restart_game: &mut bool,
+            win: bool, lose: bool) {
 
-    if !in_event && !*in_menu && !*end_game {
+    if !in_event && !*in_menu && !*end_game && !win && !lose {
         if is_a_pressed {
             gc.center.0 -= pl.move_speed * get_dt(ctx);
         }
@@ -207,6 +222,8 @@ fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (
     if is_x_pressed {
         if *end_game {
             *restart_game = true;
+            *end_game = false;
+            *in_menu = false;
         } else {
             *in_menu = false;
         }
@@ -230,7 +247,7 @@ impl event::EventHandler for MainState {
         // Updates that are non-critical time based
         handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, 
             self.is_a_pressed, self.is_d_pressed, self.is_x_pressed, self.in_event, &mut self.in_menu,
-            &mut self.end_game, &mut self.restart_game);
+            &mut self.end_game, &mut self.restart_game, self.win, self.lose);
 
         // Update GUI, make dirty update later?
         if !self.in_event && !self.in_menu && !self.end_game {
@@ -247,6 +264,7 @@ impl event::EventHandler for MainState {
                 &mut self.current_minigame, &mut self.pl.energy);
                 if quit_robber {
                     self.objects[0].end_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame = minigame::Minigame::Nothing;
                     self.current_minigame_index = -1;
                 }
             } else if self.current_minigame == minigame::Minigame::Shelf {
@@ -254,21 +272,50 @@ impl event::EventHandler for MainState {
                 &mut self.current_minigame, &mut self.pl.energy);
                 if quit_shelf {
                     self.objects[1].end_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame = minigame::Minigame::Nothing;
                     self.current_minigame_index = -1;
                 }
             }
         }
 
-        if self.game_time_left > 0.0 {
-            self.game_time_left -= 1.0 * DT as f32;
-        } else {
-            self.game_time_left = 0.0;
-            self.win = true;
-            self.end_game = true;
-        }
-        if self.pl.energy < 0.0 {
-            self.lose = true;
-            self.end_game = true;
+        if !self.restart_game {
+            if !self.in_event {
+                if self.game_time_left > 0.0 {
+                    self.game_time_left -= 1.0 * DT as f32;
+                } else {
+                    self.game_time_left = 0.0;
+                    self.win = true;
+                    self.pl.batch.set_image(self.player_win_image.clone());
+                    if self.end_timer > 0.0 {
+                        self.end_timer -= 1.0 * DT as f32;
+                    } else {
+                        self.end_timer = self.end_timer_base;
+                        self.end_game = true;
+                    }
+                }
+                if self.pl.energy < 0.0 {
+                    self.lose = true;
+                    self.pl.batch.set_image(self.player_lose_image.clone());
+                    if self.end_timer > 0.0 {
+                        self.end_timer -= 1.0 * DT as f32;
+                    } else {
+                        self.end_timer = self.end_timer_base;
+                        self.end_game = true;
+                    }
+                }
+            }
+        } else { // restart game
+            self.game_time_left = self.game_time_left_base;
+            self.pl.energy = self.pl.energy_base;
+            self.current_minigame_index = -1;
+            self.event_timer = self.event_timer_base;
+            self.pl.position = (WINDOW_SIZE.0/2.0 - self.pl.player_image.width() as f32/2.0, 0.0);
+            self.win = false;
+            self.lose = false;
+            self.restart_game = false;
+            self.end_game = false;
+            self.in_event = false;
+            self.pl.batch.set_image(self.pl.player_image.clone());
         }
 
         self.game_time_bar.update(self.game_time_left, self.game_time_left_base);
@@ -313,11 +360,12 @@ impl event::EventHandler for MainState {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    self.objects[1].start_event(self.background_image.clone(), WINDOW_SIZE);
-                    self.current_minigame_index = 1;
+                    let index: usize = self.rng.gen_range(0,1);
+                    self.objects[index].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = index as i32;
                     self.event_timer = self.event_timer_base;
                 }
-                self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
+                self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed, self.win, self.lose);
                 // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
                 // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
                 self.gc.update();
@@ -404,6 +452,11 @@ impl event::EventHandler for MainState {
         } else {
             let bg_dst = graphics::Point2::new(0.0, 0.0);
             graphics::draw(ctx, &self.solid_background, bg_dst, 0.0)?;
+
+            if self.in_menu {
+                let menu_dst = graphics::Point2::new(-110.0, 0.0);
+                graphics::draw(ctx, &self.menu_image, menu_dst, 0.0)?;
+            }
 
             if self.current_minigame == minigame::Minigame::Robber {
                 self.robber_minigame.draw();
