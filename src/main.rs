@@ -275,7 +275,9 @@ impl event::EventHandler for MainState {
         if !self.in_event && !self.in_menu && !self.end_game {
             self.energy_bar.update(self.pl.energy);
 
-            self.pl.update(ctx, self.in_event, DT);
+            if !self.win {
+                self.pl.update(ctx, self.in_event, DT);
+            }
 
             for i in &mut self.objects {
                 i.update(self.gc.center, self.pl.size, self.is_x_pressed, &mut self.in_event, &mut self.current_minigame);
@@ -309,7 +311,7 @@ impl event::EventHandler for MainState {
         }
 
         if !self.restart_game {
-            if !self.in_event {
+            if !self.in_event && !self.in_menu {
                 if self.game_time_left > 0.0 {
                     self.game_time_left -= 1.0 * DT as f32;
                 } else {
@@ -346,6 +348,10 @@ impl event::EventHandler for MainState {
             self.end_game = false;
             self.in_event = false;
             self.pl.batch.set_image(self.pl.player_image.clone());
+            self.objects[0].end_event(self.background_image.clone(), WINDOW_SIZE);
+            self.objects[1].end_event(self.background_image.clone(), WINDOW_SIZE);
+            self.objects[2].end_event(self.background_image.clone(), WINDOW_SIZE);
+            self.current_minigame = minigame::Minigame::Nothing;
         }
 
         self.game_time_bar.update(self.game_time_left, self.game_time_left_base);
@@ -468,7 +474,7 @@ impl event::EventHandler for MainState {
             if self.pl.energy > 3.0 {
                 self.energy_bar.draw(ctx);
             }
-            if self.game_time_left > 3.0 {
+            if self.game_time_left > 0.0 {
                 self.game_time_bar.draw(ctx);
             }
             if self.show_notify && !self.notify_blink {
