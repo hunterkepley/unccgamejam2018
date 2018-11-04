@@ -8,3 +8,4 @@ build = "build.rs"
 [dependencies]
 ggez = "0.4"
 sdl2 = "0.31.0"
+rand = "0.5.5"

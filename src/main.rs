@@ -1,4 +1,5 @@
 extern crate ggez;
+extern crate rand;
 
 use ggez::conf;
 use ggez::event;
@@ -16,6 +17,8 @@ use sdl2::mouse;
 
 use std::time::Instant;
 
+use rand::Rng;
+
 mod player;
 mod animation;
 mod energy_bar;
@@ -23,7 +26,9 @@ mod camera;
 mod object;
 mod minigame;
 mod robberminigame;
+mod shelfminigame;
 mod timebar;
+mod dustcloud;
 
 struct MainState {
     text: graphics::Text,
@@ -47,6 +52,7 @@ struct MainState {
     in_event: bool,
     current_minigame: minigame::Minigame,
     robber_minigame: robberminigame::RobberMinigame,
+    shelf_minigame: shelfminigame::ShelfMinigame,
     solid_background: graphics::Image,
     current_minigame_index: i32,
     game_time_bar: timebar::TimeBar,
@@ -62,6 +68,7 @@ struct MainState {
     notify_blink: bool,
     small_notify_image: graphics::Image,
     show_small_notify: bool,
+    rng: rand::ThreadRng,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -136,6 +143,8 @@ impl MainState {
         let robber_minigame = robberminigame::RobberMinigame::new(ctx, WINDOW_SIZE, "/burglar/burglar_live.png", 
         "/burglar/burglar_dead.png", "/burglar/burglar_win.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
 
+        let shelf_minigame = shelfminigame::ShelfMinigame::new(ctx, WINDOW_SIZE);
+
         let current_minigame_index = -1;
 
         let game_time_bar = timebar::TimeBar::new((30.0, 0.0), (WINDOW_SIZE.0 - 60.0, 30.0), WINDOW_SIZE.0 - 60.0);
@@ -155,11 +164,13 @@ impl MainState {
         let notify_timer = notify_timer_base;
         let notify_blink = false;
 
+        let mut rng = rand::thread_rng();
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
-            notify_timer_base, notify_timer, small_notify_image, show_small_notify };
+            notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng };
 
         Ok(s)
     }
@@ -218,8 +229,15 @@ impl event::EventHandler for MainState {
                 let quit_robber = self.robber_minigame.update_always(ctx, DT, self.is_f_pressed, WINDOW_SIZE, &mut self.in_event, 
                 &mut self.current_minigame, &mut self.pl.energy);
                 if quit_robber {
-                    self.current_minigame_index = -1;
                     self.objects[0].end_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = -1;
+                }
+            } else if self.current_minigame == minigame::Minigame::Shelf {
+                let quit_shelf = self.shelf_minigame.update_always(ctx, DT, self.is_d_pressed, WINDOW_SIZE, &mut self.in_event, 
+                &mut self.current_minigame, &mut self.pl.energy);
+                if quit_shelf {
+                    self.objects[1].end_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = -1;
                 }
             }
         }
@@ -287,6 +305,8 @@ impl event::EventHandler for MainState {
             } else {
                 if self.current_minigame == minigame::Minigame::Robber {
                     self.robber_minigame.update(DT);
+                } else if self.current_minigame == minigame::Minigame::Shelf {
+                    self.shelf_minigame.update(DT);
                 }
             }
 
@@ -384,6 +404,28 @@ impl event::EventHandler for MainState {
                         30.0);
                     graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;
                     self.robber_minigame.time_bar.draw(ctx);
+                }
+            } else if self.current_minigame == minigame::Minigame::Shelf {
+                self.shelf_minigame.draw();
+                let shelf_param = self.shelf_minigame.return_param(dpiscale);
+                graphics::draw_ex(ctx, &self.shelf_minigame.shelf_batch, shelf_param)?;
+                graphics::draw_ex(ctx, &self.shelf_minigame.trophy_batch, shelf_param)?;
+                self.shelf_minigame.shelf_batch.clear();
+                self.shelf_minigame.trophy_batch.clear();
+                if !self.shelf_minigame.ended {
+                    graphics::draw_ex(ctx, &self.shelf_minigame.duster_batch, shelf_param)?;
+                    self.shelf_minigame.duster_batch.clear();
+                }
+                for i in &mut self.shelf_minigame.dust_clouds {
+                    let dust_param = i.return_param(dpiscale);
+                    graphics::draw_ex(ctx, &i.batch, dust_param)?;
+                    i.batch.clear();
+                }
+                if !self.shelf_minigame.ended {
+                    let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.robber_minigame.action_text.get_dimensions().w / 2.0,
+                        30.0);
+                    graphics::draw(ctx, &self.shelf_minigame.action_text, action_dst, 0.0)?;
+                    self.shelf_minigame.time_bar.draw(ctx);
                 }
             }
         }
