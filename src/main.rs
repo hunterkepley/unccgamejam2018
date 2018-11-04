@@ -57,6 +57,9 @@ struct MainState {
     notify_image: graphics::Image,
     notify_position: (f32, f32),
     show_notify: bool,
+    notify_timer_base: f32,
+    notify_timer: f32,
+    notify_blink: bool,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -104,7 +107,7 @@ impl MainState {
 
         let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0), (0.0, 0.0), minigame::Minigame::Nothing);
 
-        let _trophy_clean_image_location = "/shelf/trophy_clean.png";
+        let _trophy_clean_image_location = "/misc/shelf_ow.png";
         let _trophy_clean_image = graphics::Image::new(ctx, _trophy_clean_image_location).unwrap();
 
         let objects = vec![
@@ -113,9 +116,9 @@ impl MainState {
                 (background_image.width() as f32 - _door_open_image.width() as f32, WINDOW_SIZE.1 - _door_open_image.height() as f32 - 45.0),
                 minigame::Minigame::Robber),
 
-            object::Object::new(ctx, _trophy_clean_image_location, "/shelf/trophy_dirty.png",
-                (300.0, WINDOW_SIZE.1/2.0),
-                (300.0, WINDOW_SIZE.1/2.0),
+            object::Object::new(ctx, _trophy_clean_image_location, "/misc/shelf_event.png",
+                (300.0, 0.0),
+                (300.0, 0.0),
                 minigame::Minigame::Shelf)
         ];
 
@@ -142,13 +145,17 @@ impl MainState {
         let lose = false;
 
         let notify_image = graphics::Image::new(ctx, "/misc/notifier.png").unwrap();
-        let notify_position = (0.0, 0.0);
-        let show_notify = false;
+        let notify_position = (0.0, 50.0);
+        let show_notify = true;
+        let notify_timer_base = 0.1;
+        let notify_timer = notify_timer_base;
+        let notify_blink = false;
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
-            game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify };
+            game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
+            notify_timer_base, notify_timer };
 
         Ok(s)
     }
@@ -227,6 +234,17 @@ impl event::EventHandler for MainState {
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
             // Update fixed-interval updates
+            // notify blinker
+            if self.notify_timer > 0.0 {
+                self.notify_timer -= 1.0 * DT as f32;
+            } else {
+                if !self.notify_blink {
+                    self.notify_blink = true;
+                } else {
+                    self.notify_blink = false;
+                }
+                self.notify_timer = self.notify_timer_base;
+            }
             // Timer for events
             if !self.in_event {
                 if self.event_timer > 0.0 {
@@ -302,7 +320,7 @@ impl event::EventHandler for MainState {
             // GUI drawing
             self.energy_bar.draw(ctx);
             self.game_time_bar.draw(ctx);
-            if self.show_notify {
+            if self.show_notify && !self.notify_blink {
                 let notify_dst = graphics::Point2::new(self.notify_position.0, self.notify_position.1);
                 graphics::draw(ctx, &self.notify_image, notify_dst, 0.0)?;
             }
