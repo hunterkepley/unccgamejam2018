@@ -9,18 +9,21 @@ pub struct Object {
     pub position: (f32, f32),
     pub size: (u32, u32),
     pub has_event: bool,
-    pub this_minigame: minigame::Minigame
+    pub this_minigame: minigame::Minigame,
+    pub neutral_position: (f32, f32),
+    pub event_position: (f32, f32)
 }
 
 impl Object {
     pub fn new(ctx: &mut Context, image_location: &str, event_image_location: &str, position: (f32, f32),
-    this_minigame: minigame::Minigame) -> Object {
+    event_position: (f32, f32), this_minigame: minigame::Minigame) -> Object {
         let image = graphics::Image::new(ctx, image_location).unwrap();
         let event_image = graphics::Image::new(ctx, event_image_location).unwrap();
         let batch = graphics::spritebatch::SpriteBatch::new(image.clone());
         let size = (image.width(), image.height());
         let has_event = false;
-        Object { image, event_image, batch, position, size, has_event, this_minigame }
+        let neutral_position = position;
+        Object { image, event_image, batch, position, size, has_event, this_minigame, neutral_position, event_position }
     }
 
     pub fn start_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) {
@@ -28,7 +31,7 @@ impl Object {
         self.size = (self.event_image.width(), self.event_image.height());
         self.batch.set_image(self.event_image.clone());
         // Move it to new image location
-        self.position = (background_image.width() as f32 - self.event_image.width() as f32, window_size.1 - self.event_image.height() as f32 - 45.0);
+        self.position = self.event_position;
     }
 
     pub fn end_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) { // USE THIS TO END THE EVENT AFTER LOST/WON
@@ -36,7 +39,7 @@ impl Object {
         self.size = (self.image.width(), self.image.height());
         self.batch.set_image(self.image.clone());
         // Move it back
-        self.position = (background_image.width() as f32 - self.image.width() as f32/2.0, window_size.1 - self.image.height() as f32 - 45.0);
+        self.position = self.neutral_position;
     }
 
     pub fn update(&mut self, gc_center: (f32, f32), pl_size: (u32, u32), is_x_pressed: bool, in_event: &mut bool, 

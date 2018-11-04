@@ -54,6 +54,9 @@ struct MainState {
     game_time_left: f32,
     win: bool,
     lose: bool,
+    notify_image: graphics::Image,
+    notify_position: (f32, f32),
+    show_notify: bool,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -96,8 +99,10 @@ impl MainState {
         // game objects
         let _door_closed_image_location = "/misc/door_closed.png";
         let _door_closed_image = graphics::Image::new(ctx, _door_closed_image_location).unwrap();
+        let _door_open_image_location = "/misc/door_opened.png";
+        let _door_open_image = graphics::Image::new(ctx, _door_open_image_location).unwrap();
 
-        let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0), minigame::Minigame::Nothing);
+        let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0), (0.0, 0.0), minigame::Minigame::Nothing);
 
         let _trophy_clean_image_location = "/shelf/trophy_clean.png";
         let _trophy_clean_image = graphics::Image::new(ctx, _trophy_clean_image_location).unwrap();
@@ -105,10 +110,12 @@ impl MainState {
         let objects = vec![
             object::Object::new(ctx, _door_closed_image_location, "/misc/door_opened.png",
                 (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 45.0), 
+                (background_image.width() as f32 - _door_open_image.width() as f32, WINDOW_SIZE.1 - _door_open_image.height() as f32 - 45.0),
                 minigame::Minigame::Robber),
 
             object::Object::new(ctx, _trophy_clean_image_location, "/shelf/trophy_dirty.png",
-                (300.0, WINDOW_SIZE.1/2.0 + 100.0),
+                (300.0, WINDOW_SIZE.1/2.0),
+                (300.0, WINDOW_SIZE.1/2.0),
                 minigame::Minigame::Shelf)
         ];
 
@@ -134,10 +141,14 @@ impl MainState {
         let win = false;
         let lose = false;
 
+        let notify_image = graphics::Image::new(ctx, "/misc/notifier.png").unwrap();
+        let notify_position = (0.0, 0.0);
+        let show_notify = false;
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
-            game_time_bar, game_time_left_base, game_time_left, win, lose };
+            game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify };
 
         Ok(s)
     }
@@ -221,8 +232,8 @@ impl event::EventHandler for MainState {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
-                    self.current_minigame_index = 0;
+                    self.objects[1].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = 1;
                     self.event_timer = self.event_timer_base;
                 }
                 self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
@@ -291,6 +302,10 @@ impl event::EventHandler for MainState {
             // GUI drawing
             self.energy_bar.draw(ctx);
             self.game_time_bar.draw(ctx);
+            if self.show_notify {
+                let notify_dst = graphics::Point2::new(self.notify_position.0, self.notify_position.1);
+                graphics::draw(ctx, &self.notify_image, notify_dst, 0.0)?;
+            }
 
             // Drawables are drawn from their top-left corner.
             // Text drawing for energy
