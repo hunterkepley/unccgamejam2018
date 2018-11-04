@@ -276,8 +276,8 @@ impl event::EventHandler for MainState {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
-                    self.current_minigame_index = 0;
+                    self.objects[1].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = 1;
                     self.event_timer = self.event_timer_base;
                 }
                 self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
@@ -351,8 +351,10 @@ impl event::EventHandler for MainState {
                 graphics::draw(ctx, &self.notify_image, notify_dst, 0.0)?;
             }
             if self.show_small_notify && !self.notify_blink {
-                let notify_dst = graphics::Point2::new(self.objects[self.current_minigame_index as usize].position.0+self.gc.offset.0,
-                self.objects[self.current_minigame_index as usize].position.1+self.gc.offset.1);
+                let notify_dst = graphics::Point2::new(self.objects[self.current_minigame_index as usize].position.0 +
+                self.objects[self.current_minigame_index as usize].size.0 as f32 / 2.0 + self.gc.offset.0 - self.small_notify_image.width() as f32 / 2.0,
+                self.objects[self.current_minigame_index as usize].position.1 +
+                self.objects[self.current_minigame_index as usize].size.1 as f32 / 2.0 + self.gc.offset.1 - self.small_notify_image.height() as f32 / 2.0);
                 graphics::draw(ctx, &self.small_notify_image, notify_dst, 0.0)?;
             }
 
