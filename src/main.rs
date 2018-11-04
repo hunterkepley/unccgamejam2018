@@ -69,6 +69,7 @@ struct MainState {
     small_notify_image: graphics::Image,
     show_small_notify: bool,
     rng: rand::ThreadRng,
+    in_menu: bool,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -166,11 +167,13 @@ impl MainState {
 
         let mut rng = rand::thread_rng();
 
+        let in_menu = true;
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
-            notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng };
+            notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu };
 
         Ok(s)
     }
@@ -178,9 +181,9 @@ impl MainState {
 
 fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (f32, f32), 
             bg_image: graphics::Image, ctx: &mut Context, is_a_pressed: bool, is_d_pressed: bool,
-            in_event: bool) {
+            is_x_pressed: bool, in_event: bool, in_menu: &mut bool) {
 
-    if !in_event {
+    if !in_event && !*in_menu {
         if is_a_pressed {
             gc.center.0 -= pl.move_speed * get_dt(ctx);
         }
@@ -194,6 +197,10 @@ fn handle_input(pl: &mut player::Player, gc: &mut camera::Camera, bg_position: (
         } else if gc.center.0 >= bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0 {
             gc.center.0 = bg_position.0 + bg_image.width() as f32 - pl.size.0 as f32/2.0;
         }
+    }
+
+    if is_x_pressed {
+        *in_menu = false;
     }
 }
 
@@ -213,10 +220,10 @@ impl event::EventHandler for MainState {
 
         // Updates that are non-critical time based
         handle_input(&mut self.pl, &mut self.gc, self.bg_position, self.background_image.clone(), ctx, 
-            self.is_a_pressed, self.is_d_pressed, self.in_event);
+            self.is_a_pressed, self.is_d_pressed, self.is_x_pressed, self.in_event, &mut self.in_menu);
 
         // Update GUI, make dirty update later?
-        if !self.in_event {
+        if !self.in_event && !self.in_menu {
             self.energy_bar.update(self.pl.energy);
 
             self.pl.update(ctx, WINDOW_SIZE);
@@ -290,7 +297,7 @@ impl event::EventHandler for MainState {
             }
 
             // Timer for events
-            if !self.in_event {
+            if !self.in_event && !self.in_menu {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
@@ -336,7 +343,7 @@ impl event::EventHandler for MainState {
             ..origin
         };
 
-        if !self.in_event {
+        if !self.in_event && !self.in_menu {
             // Porch
             self.porch_object.draw(self.gc.offset);
             let porch_object_param = self.porch_object.return_param(dpiscale);

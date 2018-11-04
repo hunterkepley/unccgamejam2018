@@ -64,7 +64,7 @@ impl ShelfMinigame {
         let end_timer_base = 1.5;
         let end_timer = end_timer_base;
 
-        let time_left_base = 5.0;
+        let time_left_base = 3.0;
         let time_left = time_left_base;
 
         let action_text = graphics::Text::new(ctx, "Press D to dust!", &font).unwrap();
