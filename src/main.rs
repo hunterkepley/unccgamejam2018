@@ -27,8 +27,10 @@ mod object;
 mod minigame;
 mod robberminigame;
 mod shelfminigame;
+mod dogminigame;
 mod timebar;
 mod dustcloud;
+mod flea;
 
 struct MainState {
     text: graphics::Text,
@@ -129,6 +131,9 @@ impl MainState {
         let _trophy_clean_image_location = "/misc/shelf_ow.png";
         let _trophy_clean_image = graphics::Image::new(ctx, _trophy_clean_image_location).unwrap();
 
+        let _dog_normal_image_location = "/misc/dog_ow.png";
+        let _dog_normal_image = graphics::Image::new(ctx, _dog_normal_image_location).unwrap();
+
         let objects = vec![
             object::Object::new(ctx, _door_closed_image_location, "/misc/door_opened.png",
                 (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 45.0), 
@@ -138,7 +143,12 @@ impl MainState {
             object::Object::new(ctx, _trophy_clean_image_location, "/misc/shelf_event.png",
                 (300.0, 0.0),
                 (300.0, 0.0),
-                minigame::Minigame::Shelf)
+                minigame::Minigame::Shelf),
+
+            object::Object::new(ctx, _dog_normal_image_location, "/misc/dog_event.png",
+                (background_image.width() as f32 - 300.0 as f32, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0), 
+                (background_image.width() as f32 - 300.0 as f32, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0),
+            minigame::Minigame::Dog)
         ];
 
         let event_timer_base = 5.0;
@@ -364,7 +374,7 @@ impl event::EventHandler for MainState {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    let index: usize = self.rng.gen_range(0,2);
+                    let index: usize = 2;//self.rng.gen_range(0,2);
                     self.objects[index].start_event(self.background_image.clone(), WINDOW_SIZE);
                     self.current_minigame_index = index as i32;
                     self.event_timer = self.event_timer_base;

@@ -2,5 +2,6 @@
 pub enum Minigame {
     Robber,
     Shelf,
+    Dog,
     Nothing
 }

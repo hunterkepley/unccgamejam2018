@@ -141,7 +141,7 @@ impl ShelfMinigame {
                 self.trophy_batch.set_image(self.trophy_really_dirty_image.clone());
                 self.ended = true;
             }
-            if self.end_timer > 0.0 && self.swipes_left > 0 {
+            if self.end_timer > 0.0 {
                 self.end_timer -= 1.0 * dt as f32;
             } else {
                 *in_event = false;
@@ -156,7 +156,7 @@ impl ShelfMinigame {
                 self.duster_move_timer = self.duster_move_timer_base;
                 self.duster_position.1 = self.duster_base_position.1;
                 
-                *energy -= 20.0;
+                //*energy -= 20.0;
                 return true;
             }
         }
