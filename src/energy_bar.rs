@@ -10,6 +10,7 @@ pub struct EnergyBar {
     pub rect: graphics::Rect,
     pub energy_rect: graphics::Rect,
     pub offset: f32,
+    pub can_draw: bool
 }
 
 impl EnergyBar {
@@ -20,13 +21,18 @@ impl EnergyBar {
         // Actual energy bar
         let offset = 5.0;
         let energy_rect = graphics::Rect::new(position.0 + offset, position.1 + offset, size.0 - 2.0*offset, size.1 - 2.0*offset);
-        EnergyBar{ position, size, current_width, max_width, rect, energy_rect, offset }
+        let can_draw = true;
+        EnergyBar{ position, size, current_width, max_width, rect, energy_rect, offset, can_draw }
     }
 
     pub fn update(&mut self, energy: f32) {
         // Resize bar to fit current energy level yet keep ratio of max_width
         self.current_width = self.max_width * (energy / 100.0);
+        if energy <= 0.0 {
+            self.can_draw = false;
+        }
         if self.current_width <= 0.0 {
+
             self.current_width = 0.0;
         }
         self.energy_rect = graphics::Rect::new(self.position.0 + self.offset, self.position.1 + self.offset, 

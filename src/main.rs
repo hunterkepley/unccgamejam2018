@@ -174,7 +174,7 @@ impl MainState {
 
         let game_time_bar = timebar::TimeBar::new((30.0, 0.0), (WINDOW_SIZE.0 - 60.0, 30.0), WINDOW_SIZE.0 - 60.0);
 
-        let game_time_left_base = 40.0;
+        let game_time_left_base = 30.0;
         let game_time_left = game_time_left_base;
 
         let win = false;
@@ -465,8 +465,12 @@ impl event::EventHandler for MainState {
             // End of player drawing
             
             // GUI drawing
-            self.energy_bar.draw(ctx);
-            self.game_time_bar.draw(ctx);
+            if self.pl.energy > 3.0 {
+                self.energy_bar.draw(ctx);
+            }
+            if self.game_time_left > 3.0 {
+                self.game_time_bar.draw(ctx);
+            }
             if self.show_notify && !self.notify_blink {
                 let notify_dst = graphics::Point2::new(self.notify_position.0, self.notify_position.1);
                 graphics::draw(ctx, &self.notify_image, notify_dst, 0.0)?;

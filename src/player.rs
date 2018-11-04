@@ -56,7 +56,7 @@ impl Player {
 
     pub fn update(&mut self, _ctx: &mut Context, in_event: bool, dt: f64) {
             if !in_event {
-                self.energy -= 4.0 * dt as f32;
+                self.energy -= 7.0 * dt as f32;
                 if self.energy >= 100.0 {
                     self.energy = 100.0;
                 }
