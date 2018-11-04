@@ -164,6 +164,10 @@ impl event::EventHandler for MainState {
             for i in &mut self.objects {
                 i.update(self.gc.center, self.pl.size, self.is_x_pressed, &mut self.in_event, &mut self.current_minigame);
             }
+        } else {
+            if self.current_minigame == minigame::Minigame::Robber {
+                self.robber_minigame.update_always(ctx, DT, self.is_x_pressed, WINDOW_SIZE, &mut self.in_event, &mut self.current_minigame);
+            }
         }
         
         // Updates that involve physics/can be affected by time
@@ -183,7 +187,7 @@ impl event::EventHandler for MainState {
                 self.gc.update();
             } else {
                 if self.current_minigame == minigame::Minigame::Robber {
-                    self.robber_minigame.update();
+                    self.robber_minigame.update(DT);
                 }
             }
 
@@ -261,8 +265,6 @@ impl event::EventHandler for MainState {
                 graphics::draw(ctx, &self.robber_minigame.shots_left_text, shots_left_dst, 0.0)?;
                 let misses_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 90.0);
                 graphics::draw(ctx, &self.robber_minigame.misses_left_text, misses_left_dst, 0.0)?;
-                let time_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 135.0);
-                graphics::draw(ctx, &self.robber_minigame.time_left_text, time_left_dst, 0.0)?;
                 let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.robber_minigame.action_text.get_dimensions().w / 2.0,
                     0.0);
                 graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;

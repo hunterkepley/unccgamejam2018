@@ -31,7 +31,7 @@ impl Object {
         self.position = (background_image.width() as f32 - self.event_image.width() as f32, window_size.1 - self.event_image.height() as f32 - 45.0);
     }
 
-    pub fn end_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) {
+    pub fn end_event(&mut self, background_image: graphics::Image, window_size: (f32, f32)) { // USE THIS TO END THE EVENT AFTER LOST/WON
         self.has_event = false;
         self.size = (self.image.width(), self.image.height());
         self.batch.set_image(self.image.clone());

@@ -1,5 +1,7 @@
 use ggez::{Context, graphics};
 
+use super::minigame;
+
 pub struct RobberMinigame {
     pub robber_image: graphics::Image,
     pub robber_dead_image: graphics::Image,
@@ -11,13 +13,20 @@ pub struct RobberMinigame {
     pub gun_position: (f32, f32),
     pub move_interval: f32,
     pub move_interval_base: f32,
-    pub shots_left: i32, // How many needed to kill
+    pub misses_left_base: i32,
+    pub shots_left_base: i32,
+    pub time_left_base: f32,
     pub misses_left: i32, // How many you can miss
+    pub shots_left: i32, // Shots to hit left
     pub time_left: f32, //......time left
+    pub font: graphics::Font,
+    pub big_font: graphics::Font,
     pub shots_left_text: graphics::Text,
     pub misses_left_text: graphics::Text,
-    pub time_left_text: graphics::Text,
     pub action_text: graphics::Text,
+    pub move_speed: f32,
+    pub shot_interval_base: f32,
+    pub shot_interval: f32,
 }
 
 impl RobberMinigame {
@@ -34,27 +43,76 @@ impl RobberMinigame {
 
         let font = graphics::Font::new(ctx, "/fonts/DejaVuSerif.ttf", 24).unwrap();
         let big_font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 36).unwrap();
-        
-        let shots_left_text = graphics::Text::new(ctx, "Shots left: ", &font).unwrap();
-        let misses_left_text = graphics::Text::new(ctx, "Misses left: ", &font).unwrap();
-        let time_left_text = graphics::Text::new(ctx, "Time left: ", &font).unwrap();
-        let action_text = graphics::Text::new(ctx, "Press X to shoot!", &big_font).unwrap();
-
-        let move_interval_base = 10.0;
-        let move_interval = move_interval_base;
 
         let shots_left = 10;
         let misses_left = 2;
 
         let time_left = 50.0;
 
+        let shots_left_base = shots_left;
+        let misses_left_base = misses_left;
+        let time_left_base = time_left;
+
+        let shots_left_text = graphics::Text::new(ctx, &format!("Shots left: {:?}", shots_left), &font).unwrap();
+        let misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", misses_left), &font).unwrap();
+        let action_text = graphics::Text::new(ctx, "Press X to shoot!", &big_font).unwrap();
+
+        let move_interval_base = 1.0;
+        let move_interval = move_interval_base;
+
+        let shot_interval_base = 0.76;
+        let shot_interval = 0.0;
+
+        let move_speed = 350.0;
+
         RobberMinigame{ robber_image, robber_dead_image, gun_image, gun_fired_image, robber_batch, gun_batch,
-        robber_position, gun_position, move_interval, move_interval_base, shots_left, misses_left, time_left,
-        shots_left_text, misses_left_text, time_left_text, action_text }
+        robber_position, gun_position, move_interval, move_interval_base, shots_left_base, misses_left_base,
+        time_left_base, misses_left, shots_left, time_left, font, big_font, shots_left_text, misses_left_text, 
+        action_text, move_speed, shot_interval_base, shot_interval }
     }
 
-    pub fn update(&mut self) {
-        
+    pub fn update(&mut self, dt: f64) {
+        if self.move_interval > 0.0 {
+            self.move_interval -= 1.0 * dt as f32;
+        } else {
+            self.move_interval = self.move_interval_base;
+            self.move_speed *= -1.0;
+        }
+        self.robber_position.0 += self.move_speed * dt as f32;
+    }
+
+    pub fn update_always(&mut self, ctx: &mut Context, dt: f64, is_x_pressed: bool, window_size: (f32, f32), 
+    in_event: &mut bool, current_minigame: &mut minigame::Minigame) {
+        if self.shot_interval > 0.0 {
+            self.shot_interval-=1.0*dt as f32;
+        } else {
+            let mut missed = true;
+            if is_x_pressed {
+                if self.robber_position.0 <= window_size.0*0.2 {
+                    missed = false;
+                }
+                if missed {
+                    self.misses_left -= 1;
+                    self.misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", self.misses_left), &self.font).unwrap();
+                    self.shot_interval = self.shot_interval_base;
+                } else {
+                    self.shots_left -= 1;
+                    self.shots_left_text = graphics::Text::new(ctx, &format!("Shots left: {:?}", self.shots_left), &self.font).unwrap();
+                    self.shot_interval = self.shot_interval_base;
+                }
+            }
+        }
+        if self.misses_left <= 0 {
+            *in_event = false;
+            self.time_left = self.time_left_base;
+            self.shots_left = self.shots_left_base;
+            self.misses_left = self.misses_left_base;
+            self.shot_interval = 0.0;
+            *current_minigame = minigame::Minigame::Nothing;
+        }
+        if self.time_left > 0.0 {
+
+        }
     }
 
     pub fn draw(&mut self) {
