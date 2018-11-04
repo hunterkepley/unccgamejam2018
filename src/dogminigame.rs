@@ -54,7 +54,7 @@ impl DogMinigame {
 
         let key_to_press = 0;
 
-        let shakes_per_flea_base = 5;
+        let shakes_per_flea_base = 7;
         let shakes_per_flea = shakes_per_flea_base;
 
         for i in 0..fleas_left_base {
@@ -89,21 +89,76 @@ impl DogMinigame {
             self.time_left -= 1.0 * dt as f32;
         }
 
-        if self.shakes_per_flea > 0 {
+        if self.shakes_per_flea > 0 && !self.ended {
             if self.key_to_press == 0 && is_a_pressed {
                 self.key_to_press = 1;
                 self.shakes_per_flea-=1;
+                self.dog_position.0 += 10.0;
             } else if self.key_to_press == 1 && is_d_pressed {
                 self.key_to_press = 0;
                 self.shakes_per_flea-=1;
+                self.dog_position.0 -= 10.0;
             }
         } else {
             self.fleas_left-=1;
+            self.fleas.pop();
             self.shakes_per_flea = self.shakes_per_flea_base;
         }
 
+        if self.time_left < 0.0 {
+            if !self.ended {
+                self.dog_batch.set_image(self.dog_sad_image.clone());
+                self.ended = true;
+            }
+            if self.end_timer > 0.0 {
+                self.end_timer -= 1.0 * dt as f32;
+            } else {
+                *in_event = false;
+                self.time_left = self.time_left_base;
+                self.fleas_left = self.fleas_left_base;
+                self.end_timer = self.end_timer_base;
+                *current_minigame = minigame::Minigame::Nothing;
+                self.shakes_per_flea = self.shakes_per_flea_base;
+                self.fleas.clear();
+                for i in 0..self.fleas_left_base {
+                    let rp = (self.rng.gen_range(self.dog_position.0, self.dog_position.0 + self.dog_image.width() as f32),
+                    self.rng.gen_range(self.dog_position.1, self.dog_position.1 + self.dog_image.height() as f32));
+                    self.fleas.push(flea::Flea::new(ctx, rp));
+                }
+                self.dog_batch.set_image(self.dog_image.clone());
+                self.ended = false;
+
+                *energy -= 15.0;
+                return true;
+            }
+        }
+
         if self.fleas_left <= 0 {
-            // won
+            if !self.ended {
+                self.dog_batch.set_image(self.dog_happy_image.clone());
+                self.ended = true;
+            }
+            if self.end_timer > 0.0 {
+                self.end_timer -= 1.0 * dt as f32;
+            } else {
+                *in_event = false;
+                self.time_left = self.time_left_base;
+                self.fleas_left = self.fleas_left_base;
+                self.end_timer = self.end_timer_base;
+                *current_minigame = minigame::Minigame::Nothing;
+                self.shakes_per_flea = self.shakes_per_flea_base;
+                self.fleas.clear();
+                for i in 0..self.fleas_left_base {
+                    let rp = (self.rng.gen_range(self.dog_position.0, self.dog_position.0 + self.dog_image.width() as f32),
+                    self.rng.gen_range(self.dog_position.1, self.dog_position.1 + self.dog_image.height() as f32));
+                    self.fleas.push(flea::Flea::new(ctx, rp));
+                }
+                self.dog_batch.set_image(self.dog_image.clone());
+                self.ended = false;
+
+                *energy += 25.0;
+                return true;
+            }
         } else {
             if self.time_left <= 0.0 {
                 // lost

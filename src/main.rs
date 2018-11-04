@@ -551,7 +551,7 @@ impl event::EventHandler for MainState {
                 if !self.dog_minigame.ended {
                     let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.dog_minigame.action_text.get_dimensions().w / 2.0,
                         30.0);
-                    graphics::draw(ctx, &self.dog_minigame.action_text, action_dst, 0.0);
+                    graphics::draw(ctx, &self.dog_minigame.action_text, action_dst, 0.0)?;
                     self.dog_minigame.time_bar.draw(ctx);
                 }
             }
