@@ -163,7 +163,7 @@ impl RobberMinigame {
                 self.misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", self.misses_left), &self.font).unwrap();
 
                 *energy -= 25.0;
-                return false;
+                return true;
             }
         }
         if self.shots_left <= 0 { // won
@@ -189,10 +189,10 @@ impl RobberMinigame {
                 self.misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", self.misses_left), &self.font).unwrap();
 
                 *energy += 20.0;
-                return false;
+                return true;
             }
         }
-        true
+        false
     }
 
     pub fn draw(&mut self) {

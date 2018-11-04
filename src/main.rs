@@ -76,7 +76,9 @@ struct MainState {
     end_timer: f32,
     end_timer_base: f32,
     player_win_image: graphics::Image,
-    player_lose_image: graphics::Image
+    player_lose_image: graphics::Image,
+    lose_image: graphics::Image,
+    win_image: graphics::Image,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -186,13 +188,15 @@ impl MainState {
 
         let player_win_image = graphics::Image::new(ctx, "/player/player_win.png").unwrap();
         let player_lose_image = graphics::Image::new(ctx, "/player/player_lose.png").unwrap();
+        let lose_image = graphics::Image::new(ctx, "/misc/lose.png").unwrap();
+        let win_image = graphics::Image::new(ctx, "/misc/win.png").unwrap();
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
             notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu, end_game, restart_game,
-            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image };
+            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image, lose_image, win_image };
 
         Ok(s)
     }
