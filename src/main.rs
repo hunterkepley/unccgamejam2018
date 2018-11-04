@@ -60,6 +60,8 @@ struct MainState {
     notify_timer_base: f32,
     notify_timer: f32,
     notify_blink: bool,
+    small_notify_image: graphics::Image,
+    show_small_notify: bool,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -134,7 +136,7 @@ impl MainState {
         let robber_minigame = robberminigame::RobberMinigame::new(ctx, WINDOW_SIZE, "/burglar/burglar_live.png", 
         "/burglar/burglar_dead.png", "/burglar/burglar_win.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
 
-        let current_minigame_index = 0;
+        let current_minigame_index = -1;
 
         let game_time_bar = timebar::TimeBar::new((30.0, 0.0), (WINDOW_SIZE.0 - 60.0, 30.0), WINDOW_SIZE.0 - 60.0);
 
@@ -145,8 +147,10 @@ impl MainState {
         let lose = false;
 
         let notify_image = graphics::Image::new(ctx, "/misc/notifier.png").unwrap();
+        let small_notify_image = graphics::Image::new(ctx, "/misc/notifier_small.png").unwrap();
         let notify_position = (0.0, 50.0);
-        let show_notify = true;
+        let show_notify = false;
+        let show_small_notify = false;
         let notify_timer_base = 0.1;
         let notify_timer = notify_timer_base;
         let notify_blink = false;
@@ -155,7 +159,7 @@ impl MainState {
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
-            notify_timer_base, notify_timer };
+            notify_timer_base, notify_timer, small_notify_image, show_small_notify };
 
         Ok(s)
     }
@@ -214,6 +218,7 @@ impl event::EventHandler for MainState {
                 let quit_robber = self.robber_minigame.update_always(ctx, DT, self.is_f_pressed, WINDOW_SIZE, &mut self.in_event, 
                 &mut self.current_minigame, &mut self.pl.energy);
                 if quit_robber {
+                    self.current_minigame_index = -1;
                     self.objects[0].end_event(self.background_image.clone(), WINDOW_SIZE);
                 }
             }
@@ -235,23 +240,44 @@ impl event::EventHandler for MainState {
         while self.accumulator >= DT {
             // Update fixed-interval updates
             // notify blinker
-            if self.notify_timer > 0.0 {
-                self.notify_timer -= 1.0 * DT as f32;
-            } else {
-                if !self.notify_blink {
-                    self.notify_blink = true;
+            if self.current_minigame_index != -1 {
+                if self.objects[self.current_minigame_index as usize].position.0 > self.gc.position.0 + self.gc.size.0 {
+                    self.show_notify = true;
+                    self.show_small_notify = false;
+                    self.notify_position.0 = WINDOW_SIZE.0 - self.notify_image.width() as f32;
+                } else if self.objects[self.current_minigame_index as usize].position.0 + 
+                (self.objects[self.current_minigame_index as usize].size.0 as f32) < self.gc.position.0 {
+                    self.show_notify = true;
+                    self.show_small_notify = false;
+                    self.notify_position.0 = 0.0;
                 } else {
-                    self.notify_blink = false;
+                    self.show_notify = false;
+                    self.show_small_notify = true;
                 }
-                self.notify_timer = self.notify_timer_base;
+            } else {
+                self.show_notify = false;
+                self.show_small_notify = false;
             }
+            if self.show_notify || self.show_small_notify {
+                if self.notify_timer > 0.0 {
+                    self.notify_timer -= 1.0 * DT as f32;
+                } else {
+                    if !self.notify_blink {
+                        self.notify_blink = true;
+                    } else {
+                        self.notify_blink = false;
+                    }
+                    self.notify_timer = self.notify_timer_base;
+                }
+            }
+
             // Timer for events
             if !self.in_event {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    self.objects[1].start_event(self.background_image.clone(), WINDOW_SIZE);
-                    self.current_minigame_index = 1;
+                    self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = 0;
                     self.event_timer = self.event_timer_base;
                 }
                 self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
@@ -323,6 +349,11 @@ impl event::EventHandler for MainState {
             if self.show_notify && !self.notify_blink {
                 let notify_dst = graphics::Point2::new(self.notify_position.0, self.notify_position.1);
                 graphics::draw(ctx, &self.notify_image, notify_dst, 0.0)?;
+            }
+            if self.show_small_notify && !self.notify_blink {
+                let notify_dst = graphics::Point2::new(self.objects[self.current_minigame_index as usize].position.0+self.gc.offset.0,
+                self.objects[self.current_minigame_index as usize].position.1+self.gc.offset.1);
+                graphics::draw(ctx, &self.small_notify_image, notify_dst, 0.0)?;
             }
 
             // Drawables are drawn from their top-left corner.
