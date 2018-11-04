@@ -23,6 +23,7 @@ mod camera;
 mod object;
 mod minigame;
 mod robberminigame;
+mod timebar;
 
 struct MainState {
     text: graphics::Text,
@@ -36,6 +37,7 @@ struct MainState {
     is_a_pressed: bool,
     is_d_pressed: bool,
     is_x_pressed: bool,
+    is_f_pressed: bool,
     gc: camera::Camera,
     bg_position: (f32, f32),
     porch_object: object::Object,
@@ -45,7 +47,13 @@ struct MainState {
     in_event: bool,
     current_minigame: minigame::Minigame,
     robber_minigame: robberminigame::RobberMinigame,
-    solid_background: graphics::Image
+    solid_background: graphics::Image,
+    current_minigame_index: i32,
+    game_time_bar: timebar::TimeBar,
+    game_time_left_base: f32,
+    game_time_left: f32,
+    win: bool,
+    lose: bool,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -72,13 +80,14 @@ impl MainState {
         let _pl_image = graphics::Image::new(ctx, _image_location).unwrap();
         let pl = player::Player::new(ctx, _image_location, (WINDOW_SIZE.0/2.0 - _pl_image.width() as f32/2.0, 0.0), 300.0, WINDOW_SIZE, energy_bar.size.1);
 
-        // Random variables for phsyics and such 
+        
         let current_duration = Instant::now();
         let current_time = current_duration.elapsed().as_secs() as f64;
         let accumulator = 0.0;
         let is_a_pressed = false;
         let is_d_pressed = false;
         let is_x_pressed = false;
+        let is_f_pressed = false;
 
         let gc = camera::Camera::new((0.0, 0.0), WINDOW_SIZE);
 
@@ -90,13 +99,20 @@ impl MainState {
 
         let porch_object = object::Object::new(ctx, "/misc/porch.png", "/misc/porch.png", (0.0, 0.0), minigame::Minigame::Nothing);
 
+        let _trophy_clean_image_location = "/shelf/trophy_clean.png";
+        let _trophy_clean_image = graphics::Image::new(ctx, _trophy_clean_image_location).unwrap();
+
         let objects = vec![
             object::Object::new(ctx, _door_closed_image_location, "/misc/door_opened.png",
                 (background_image.width() as f32 - _door_closed_image.width() as f32/2.0, WINDOW_SIZE.1 - _door_closed_image.height() as f32 - 45.0), 
-                minigame::Minigame::Robber)
+                minigame::Minigame::Robber),
+
+            object::Object::new(ctx, _trophy_clean_image_location, "/shelf/trophy_dirty.png",
+                (300.0, WINDOW_SIZE.1/2.0 + 100.0),
+                minigame::Minigame::Shelf)
         ];
 
-        let event_timer_base = 15.0;
+        let event_timer_base = 5.0;
         let event_timer = event_timer_base;
 
         let in_event = false;
@@ -106,11 +122,22 @@ impl MainState {
         let current_minigame = minigame::Minigame::Nothing;
 
         let robber_minigame = robberminigame::RobberMinigame::new(ctx, WINDOW_SIZE, "/burglar/burglar_live.png", 
-        "/burglar/burglar_dead.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
+        "/burglar/burglar_dead.png", "/burglar/burglar_win.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
+
+        let current_minigame_index = 0;
+
+        let game_time_bar = timebar::TimeBar::new((30.0, 0.0), (WINDOW_SIZE.0 - 60.0, 30.0), WINDOW_SIZE.0 - 60.0);
+
+        let game_time_left_base = 50.0;
+        let game_time_left = game_time_left_base;
+
+        let win = false;
+        let lose = false;
 
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
-            event_timer_base, in_event, current_minigame, robber_minigame, solid_background };
+            event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
+            game_time_bar, game_time_left_base, game_time_left, win, lose };
 
         Ok(s)
     }
@@ -166,9 +193,25 @@ impl event::EventHandler for MainState {
             }
         } else {
             if self.current_minigame == minigame::Minigame::Robber {
-                self.robber_minigame.update_always(ctx, DT, self.is_x_pressed, WINDOW_SIZE, &mut self.in_event, &mut self.current_minigame);
+                let quit_robber = self.robber_minigame.update_always(ctx, DT, self.is_f_pressed, WINDOW_SIZE, &mut self.in_event, 
+                &mut self.current_minigame, &mut self.pl.energy);
+                if quit_robber {
+                    self.objects[0].end_event(self.background_image.clone(), WINDOW_SIZE);
+                }
             }
         }
+
+        if self.game_time_left > 0.0 {
+            self.game_time_left -= 1.0 * DT as f32;
+        } else {
+            self.game_time_left = 0.0;
+            self.win = true;
+        }
+        if self.pl.energy < 0.0 {
+            self.lose = true;
+        }
+
+        self.game_time_bar.update(self.game_time_left, self.game_time_left_base);
         
         // Updates that involve physics/can be affected by time
         while self.accumulator >= DT {
@@ -179,6 +222,7 @@ impl event::EventHandler for MainState {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
                     self.objects[0].start_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame_index = 0;
                     self.event_timer = self.event_timer_base;
                 }
                 self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed);
@@ -224,6 +268,7 @@ impl event::EventHandler for MainState {
             graphics::draw_ex(ctx, &self.porch_object.batch, porch_object_param)?;
             self.porch_object.batch.clear();
 
+
             // Background objects / Background itself
             let bg_dst = graphics::Point2::new(self.bg_position.0+self.gc.offset.0, self.bg_position.1+self.gc.offset.1);
             graphics::draw(ctx, &self.background_image, bg_dst, 0.0)?;
@@ -245,6 +290,7 @@ impl event::EventHandler for MainState {
             
             // GUI drawing
             self.energy_bar.draw(ctx);
+            self.game_time_bar.draw(ctx);
 
             // Drawables are drawn from their top-left corner.
             // Text drawing for energy
@@ -258,16 +304,21 @@ impl event::EventHandler for MainState {
                 self.robber_minigame.draw();
                 let robber_param = self.robber_minigame.return_param(dpiscale);
                 graphics::draw_ex(ctx, &self.robber_minigame.robber_batch, robber_param)?;
-                graphics::draw_ex(ctx, &self.robber_minigame.gun_batch, robber_param)?;
+                if !self.robber_minigame.robber_dead {
+                    graphics::draw_ex(ctx, &self.robber_minigame.gun_batch, robber_param)?;
+                    self.robber_minigame.gun_batch.clear();
+                }
                 self.robber_minigame.robber_batch.clear();
-                self.robber_minigame.gun_batch.clear();
-                let shots_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 45.0);
-                graphics::draw(ctx, &self.robber_minigame.shots_left_text, shots_left_dst, 0.0)?;
-                let misses_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 90.0);
-                graphics::draw(ctx, &self.robber_minigame.misses_left_text, misses_left_dst, 0.0)?;
-                let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.robber_minigame.action_text.get_dimensions().w / 2.0,
-                    0.0);
-                graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;
+                if !self.robber_minigame.robber_dead {
+                    let shots_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 45.0);
+                    graphics::draw(ctx, &self.robber_minigame.shots_left_text, shots_left_dst, 0.0)?;
+                    let misses_left_dst = graphics::Point2::new(0.0, WINDOW_SIZE.1 - 90.0);
+                    graphics::draw(ctx, &self.robber_minigame.misses_left_text, misses_left_dst, 0.0)?;
+                    let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.robber_minigame.action_text.get_dimensions().w / 2.0,
+                        30.0);
+                    graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;
+                    self.robber_minigame.time_bar.draw(ctx);
+                }
             }
         }
         
@@ -294,6 +345,9 @@ impl event::EventHandler for MainState {
         if keycode == keyboard::Keycode::X {
             self.is_x_pressed = true;
         }
+        if keycode == keyboard::Keycode::F {
+            self.is_f_pressed = true;
+        }
     }
 
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: Keycode, _keymod: Mod, _release: bool) {
@@ -305,6 +359,9 @@ impl event::EventHandler for MainState {
         }
         if keycode == keyboard::Keycode::X {
             self.is_x_pressed = false;
+        }
+        if keycode == keyboard::Keycode::F {
+            self.is_f_pressed = false;
         }
     }
 
@@ -320,9 +377,9 @@ impl event::EventHandler for MainState {
 
 pub fn main() {
     let c = conf::Conf::new();
-    let ctx = &mut ContextBuilder::new("invigorationstation", "hunterkepley")
+    let ctx = &mut ContextBuilder::new("STAYAWAKE", "hunterkepley")
         .window_setup(conf::WindowSetup{
-            title: "Invigoration Station".to_owned(),
+            title: "STAYAWAKE".to_owned(),
             icon: "".to_owned(),
             resizable: false,
             allow_highdpi: true,
