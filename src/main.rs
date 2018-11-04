@@ -55,6 +55,7 @@ struct MainState {
     current_minigame: minigame::Minigame,
     robber_minigame: robberminigame::RobberMinigame,
     shelf_minigame: shelfminigame::ShelfMinigame,
+    dog_minigame: dogminigame::DogMinigame,
     solid_background: graphics::Image,
     current_minigame_index: i32,
     game_time_bar: timebar::TimeBar,
@@ -146,8 +147,8 @@ impl MainState {
                 minigame::Minigame::Shelf),
 
             object::Object::new(ctx, _dog_normal_image_location, "/misc/dog_event.png",
-                (background_image.width() as f32 - 300.0 as f32, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0), 
-                (background_image.width() as f32 - 300.0 as f32, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0),
+                (background_image.width() as f32 - 500.0, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0), 
+                (background_image.width() as f32 - 500.0, WINDOW_SIZE.1 - _dog_normal_image.height() as f32 - 45.0),
             minigame::Minigame::Dog)
         ];
 
@@ -164,6 +165,8 @@ impl MainState {
         "/burglar/burglar_dead.png", "/burglar/burglar_win.png", "/burglar/gun_loaded.png", "/burglar/gun_shot.png");
 
         let shelf_minigame = shelfminigame::ShelfMinigame::new(ctx, WINDOW_SIZE);
+
+        let dog_minigame = dogminigame::DogMinigame::new(ctx, WINDOW_SIZE);
 
         let current_minigame_index = -1;
 
@@ -206,7 +209,7 @@ impl MainState {
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
             notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu, end_game, restart_game,
-            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image, lose_image, win_image };
+            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image, lose_image, win_image, dog_minigame };
 
         Ok(s)
     }
@@ -286,6 +289,14 @@ impl event::EventHandler for MainState {
                 &mut self.current_minigame, &mut self.pl.energy);
                 if quit_shelf {
                     self.objects[1].end_event(self.background_image.clone(), WINDOW_SIZE);
+                    self.current_minigame = minigame::Minigame::Nothing;
+                    self.current_minigame_index = -1;
+                }
+            } else if self.current_minigame == minigame::Minigame::Dog {
+                let quit_dog = self.dog_minigame.update_always(ctx, DT, self.is_a_pressed, self.is_d_pressed, WINDOW_SIZE, &mut self.in_event,
+                &mut self.current_minigame, &mut self.pl.energy);
+                if quit_dog {
+                    self.objects[2].end_event(self.background_image.clone(), WINDOW_SIZE);
                     self.current_minigame = minigame::Minigame::Nothing;
                     self.current_minigame_index = -1;
                 }
@@ -388,6 +399,8 @@ impl event::EventHandler for MainState {
                     self.robber_minigame.update(DT);
                 } else if self.current_minigame == minigame::Minigame::Shelf {
                     self.shelf_minigame.update(DT);
+                } else if self.current_minigame == minigame::Minigame::Dog {
+                    self.dog_minigame.update(DT);
                 }
             }
 
@@ -524,6 +537,22 @@ impl event::EventHandler for MainState {
                         30.0);
                     graphics::draw(ctx, &self.shelf_minigame.action_text, action_dst, 0.0)?;
                     self.shelf_minigame.time_bar.draw(ctx);
+                }
+            } else if self.current_minigame == minigame::Minigame::Dog {
+                self.dog_minigame.draw();
+                let dog_param = self.dog_minigame.return_param(dpiscale);
+                graphics::draw_ex(ctx, &self.dog_minigame.dog_batch, dog_param)?;
+                self.dog_minigame.dog_batch.clear();
+                for i in &mut self.dog_minigame.fleas {
+                    let flea_param = i.return_param(dpiscale);
+                    graphics::draw_ex(ctx, &i.batch, flea_param)?;
+                    i.batch.clear();
+                }
+                if !self.dog_minigame.ended {
+                    let action_dst = graphics::Point2::new(WINDOW_SIZE.0 / 2.0 - self.dog_minigame.action_text.get_dimensions().w / 2.0,
+                        30.0);
+                    graphics::draw(ctx, &self.dog_minigame.action_text, action_dst, 0.0);
+                    self.dog_minigame.time_bar.draw(ctx);
                 }
             }
         }

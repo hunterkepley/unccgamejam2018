@@ -53,7 +53,7 @@ impl ShelfMinigame {
 
         let font = graphics::Font::new(ctx, "/fonts/satumt.TTF", 36).unwrap();
 
-        let mut rng = rand::thread_rng();
+        let rng = rand::thread_rng();
 
         let swipes_left_base = 5;
         let swipes_left = swipes_left_base;
