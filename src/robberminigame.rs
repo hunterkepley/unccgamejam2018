@@ -145,7 +145,7 @@ impl RobberMinigame {
                 self.robber_batch.set_image(self.robber_win_image.clone());
                 self.robber_dead = true;
             }
-            if self.end_timer > 0.0 {
+            if self.end_timer > 0.0 && self.shots_left > 0 {
                 self.end_timer -= 1.0 * dt as f32;
             } else {
                 *in_event = false;
@@ -162,7 +162,7 @@ impl RobberMinigame {
                 self.shots_left_text = graphics::Text::new(ctx, &format!("Shots to hit: {:?}", self.shots_left), &self.font).unwrap();
                 self.misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", self.misses_left), &self.font).unwrap();
 
-                *energy -= 25.0;
+                *energy -= 15.0;
                 return true;
             }
         }
@@ -188,7 +188,7 @@ impl RobberMinigame {
                 self.shots_left_text = graphics::Text::new(ctx, &format!("Shots to hit: {:?}", self.shots_left), &self.font).unwrap();
                 self.misses_left_text = graphics::Text::new(ctx, &format!("Misses left: {:?}", self.misses_left), &self.font).unwrap();
 
-                *energy += 20.0;
+                *energy += 25.0;
                 return true;
             }
         }

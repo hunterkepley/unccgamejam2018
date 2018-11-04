@@ -54,8 +54,14 @@ impl Player {
         );
     }
 
-    pub fn update(&mut self, _ctx: &mut Context, bg_size: (f32, f32)) {
-        // bottom offset for the bar at the bottom where the GUI is being rendered.
+    pub fn update(&mut self, _ctx: &mut Context, in_event: bool, dt: f64) {
+            if !in_event {
+                self.energy -= 4.0 * dt as f32;
+                println!("{:?}", 4.0 * dt as f32);
+                if self.energy >= 100.0 {
+                    self.energy = 100.0;
+                }
+            }
 
         /*if self.position.0 <= 0.0 {
             self.position.0 = 0.0;
@@ -64,14 +70,10 @@ impl Player {
         }*/
     }
 
-    pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool, win: bool, lose: bool) {
+    pub fn update_fixed(&mut self, ctx: &mut Context, dt: f64, is_a_pressed: bool, is_d_pressed: bool, win: bool, lose: bool, in_event: bool) {
         if !win && !lose {
             let jump_wobble_interval = 175.0;
 
-            self.energy -= 4.0 * dt as f32;
-            if self.energy >= 100.0 {
-                self.energy = 100.0;
-            }
 
             // Player bouncing whilst walking is in here
             if is_a_pressed || is_d_pressed {

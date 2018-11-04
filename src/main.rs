@@ -257,7 +257,7 @@ impl event::EventHandler for MainState {
         if !self.in_event && !self.in_menu && !self.end_game {
             self.energy_bar.update(self.pl.energy);
 
-            self.pl.update(ctx, WINDOW_SIZE);
+            self.pl.update(ctx, self.in_event, DT);
 
             for i in &mut self.objects {
                 i.update(self.gc.center, self.pl.size, self.is_x_pressed, &mut self.in_event, &mut self.current_minigame);
@@ -364,12 +364,12 @@ impl event::EventHandler for MainState {
                 if self.event_timer > 0.0 {
                     self.event_timer-=1.0 * DT as f32;
                 } else {
-                    let index: usize = self.rng.gen_range(0,1);
+                    let index: usize = self.rng.gen_range(0,2);
                     self.objects[index].start_event(self.background_image.clone(), WINDOW_SIZE);
                     self.current_minigame_index = index as i32;
                     self.event_timer = self.event_timer_base;
                 }
-                self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed, self.win, self.lose);
+                self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed, self.win, self.lose, self.in_event);
                 // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
                 // self.gc.center.1 = self.pl.position.1 + self.gc.size.1 / 2.0;
                 self.gc.update();
@@ -462,6 +462,17 @@ impl event::EventHandler for MainState {
                 graphics::draw(ctx, &self.menu_image, menu_dst, 0.0)?;
             }
 
+            if self.end_game {
+                if self.win {
+                    let menu_dst = graphics::Point2::new(-110.0, 0.0);
+                    graphics::draw(ctx, &self.win_image, menu_dst, 0.0)?;
+                }
+                if self.lose {
+                    let menu_dst = graphics::Point2::new(-110.0, 0.0);
+                    graphics::draw(ctx, &self.lose_image, menu_dst, 0.0)?;
+                }
+            }
+
             if self.current_minigame == minigame::Minigame::Robber {
                 self.robber_minigame.draw();
                 let robber_param = self.robber_minigame.return_param(dpiscale);
@@ -480,6 +491,7 @@ impl event::EventHandler for MainState {
                         30.0);
                     graphics::draw(ctx, &self.robber_minigame.action_text, action_dst, 0.0)?;
                     self.robber_minigame.time_bar.draw(ctx);
+                    
                 }
             } else if self.current_minigame == minigame::Minigame::Shelf {
                 self.shelf_minigame.draw();
