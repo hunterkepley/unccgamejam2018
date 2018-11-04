@@ -4,6 +4,7 @@ extern crate rand;
 use ggez::conf;
 use ggez::event;
 use ggez::graphics;
+use ggez::audio;
 use ggez::graphics::DrawMode;
 use ggez::ContextBuilder;
 use ggez::timer;
@@ -82,6 +83,7 @@ struct MainState {
     player_lose_image: graphics::Image,
     lose_image: graphics::Image,
     win_image: graphics::Image,
+    music: ggez::audio::Source,
 }
 
 const WINDOW_SIZE: (f32, f32) = (1024.0, 768.0);
@@ -204,12 +206,15 @@ impl MainState {
         let lose_image = graphics::Image::new(ctx, "/misc/lose.png").unwrap();
         let win_image = graphics::Image::new(ctx, "/misc/win.png").unwrap();
 
+        let music = audio::Source::new(ctx, "/music/music.flac")?;
+        music.play()?;
+
         let s = MainState { text, frames: 0, background_image, pl, energy_bar, current_time, current_duration, 
             accumulator, is_a_pressed, is_d_pressed, is_x_pressed, gc, bg_position, porch_object, objects, event_timer, 
             event_timer_base, in_event, current_minigame, robber_minigame, solid_background, current_minigame_index, is_f_pressed,
             game_time_bar, game_time_left_base, game_time_left, win, lose, notify_image, notify_position, show_notify, notify_blink,
             notify_timer_base, notify_timer, small_notify_image, show_small_notify, shelf_minigame, rng, in_menu, end_game, restart_game,
-            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image, lose_image, win_image, dog_minigame };
+            menu_image, end_timer, end_timer_base, player_win_image, player_lose_image, lose_image, win_image, dog_minigame, music };
 
         Ok(s)
     }
@@ -382,13 +387,15 @@ impl event::EventHandler for MainState {
 
             // Timer for events
             if !self.in_event && !self.in_menu && !self.end_game {
-                if self.event_timer > 0.0 {
-                    self.event_timer-=1.0 * DT as f32;
-                } else {
-                    let index: usize = 2;//self.rng.gen_range(0,2);
-                    self.objects[index].start_event(self.background_image.clone(), WINDOW_SIZE);
-                    self.current_minigame_index = index as i32;
-                    self.event_timer = self.event_timer_base;
+                if self.current_minigame_index == -1 {
+                    if self.event_timer > 0.0 {
+                        self.event_timer-=1.0 * DT as f32;
+                    } else {
+                        let index: usize = self.rng.gen_range(0,3);
+                        self.objects[index].start_event(self.background_image.clone(), WINDOW_SIZE);
+                        self.current_minigame_index = index as i32;
+                        self.event_timer = self.event_timer_base;
+                    }
                 }
                 self.pl.update_fixed(ctx, DT, self.is_a_pressed, self.is_d_pressed, self.win, self.lose, self.in_event);
                 // self.gc.center.0 = self.pl.position.0 + self.gc.size.0 / 2.0;
